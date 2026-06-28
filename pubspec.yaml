@@ -3,6 +3,13 @@ description: "A Flutter-first, Rust-powered native cryptography package supporti
 version: 0.0.1
 homepage: https://github.com/landxcape/ffr_crypto
 repository: https://github.com/landxcape/ffr_crypto
+issue_tracker: https://github.com/landxcape/ffr_crypto/issues
+topics:
+  - cryptography
+  - security
+  - ffi
+  - rust
+  - encryption
 
 environment:
   sdk: ^3.12.2
