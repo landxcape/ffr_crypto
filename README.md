@@ -23,6 +23,21 @@ A Flutter-first, Rust-powered native cryptography package using Dart FFI and Flu
 
 ---
 
+## Platform Support
+
+`ffr_crypto` compiles a native Rust library at build time via Flutter Native Assets. It works on all platforms where a Rust toolchain is available.
+
+| Platform | Architectures | Supported |
+|----------|---------------|-----------|
+| 🍎 macOS | arm64, x64 | ✅ |
+| 📱 iOS | arm64, x64 (simulator) | ✅ |
+| 🤖 Android | arm64-v8a, armeabi-v7a, x86, x86_64 | ✅ |
+| 🐧 Linux | arm64, x64 | ✅ |
+| 🪟 Windows | x64 | ✅ |
+| 🌐 Web | — | ❌ (dart:ffi is unsupported on Web) |
+
+---
+
 ## Getting Started
 
 Add the package dependency to your `pubspec.yaml`:
@@ -32,10 +47,29 @@ dependencies:
   ffr_crypto: ^0.0.1
 ```
 
-Ensure your environment has the Rust toolchain installed:
+### Prerequisites — Rust Toolchain
+
+Install the [Rust toolchain](https://rustup.rs) first, then add the targets for each platform you intend to build:
+
 ```bash
-rustup target add aarch64-apple-darwin x86_64-apple-darwin # for macOS
+# macOS (Apple Silicon + Intel)
+rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+# iOS (Device + Simulator)
+rustup target add aarch64-apple-ios x86_64-apple-ios
+
+# Android (requires NDK via Android Studio or sdkmanager)
+rustup target add aarch64-linux-android armv7-linux-androideabi \
+                   i686-linux-android x86_64-linux-android
+
+# Linux
+rustup target add aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu
+
+# Windows (run on a Windows host)
+rustup target add x86_64-pc-windows-msvc
 ```
+
+> **Note:** Android builds additionally require the [Android NDK](https://developer.android.com/ndk). Install it via Android Studio → SDK Manager → SDK Tools → NDK.
 
 ---
 
