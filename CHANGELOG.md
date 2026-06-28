@@ -1,4 +1,17 @@
+## 0.0.2
+
+### Breaking Changes
+
+- `Random` renamed to `CryptoRandom` to avoid shadowing `dart:math`'s `Random` class.
+- `Hash` renamed to `CryptoHash` to prevent conflicts with user-defined or third-party `Hash` symbols.
+- `Hasher` renamed to `CryptoHasher` for consistency with the above rename.
+
+**Migration:** find-and-replace `Random.` → `CryptoRandom.`, `Hash.` → `CryptoHash.`, `Hasher` → `CryptoHasher`.
+
+---
+
 ## 0.0.1
+
 
 Initial release of `ffr_crypto` — a Flutter-first, Rust-powered native cryptography package built on Dart FFI and Flutter Native Assets.
 

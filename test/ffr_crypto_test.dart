@@ -3,16 +3,16 @@ import 'package:test/test.dart';
 import 'package:ffr_crypto/ffr_crypto.dart';
 
 void main() {
-  group('Random', () {
+  group('CryptoRandom', () {
     test('secureBytes generates correct length', () async {
-      final bytes = await Random.secureBytes(32);
+      final bytes = await CryptoRandom.secureBytes(32);
       expect(bytes.length, 32);
       expect(bytes, isNot(Uint8List(32))); // Assure it is not all zeros
     });
 
     test('secureBytes throws on invalid length', () async {
-      expect(() => Random.secureBytes(-1), throwsA(isA<CryptoException>()));
-      expect(() => Random.secureBytes(0), throwsA(isA<CryptoException>()));
+      expect(() => CryptoRandom.secureBytes(-1), throwsA(isA<CryptoException>()));
+      expect(() => CryptoRandom.secureBytes(0), throwsA(isA<CryptoException>()));
     });
   });
 
@@ -91,7 +91,7 @@ void main() {
 
     test('SHA-256 known test vector', () async {
       final data = Uint8List.fromList('abc'.codeUnits);
-      final digest = await Hash.hash(HashAlgorithm.sha256, data);
+      final digest = await CryptoHash.hash(HashAlgorithm.sha256, data);
       expect(
         toHex(digest),
         'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
@@ -100,7 +100,7 @@ void main() {
 
     test('SHA-512 known test vector', () async {
       final data = Uint8List.fromList('abc'.codeUnits);
-      final digest = await Hash.hash(HashAlgorithm.sha512, data);
+      final digest = await CryptoHash.hash(HashAlgorithm.sha512, data);
       expect(
         toHex(digest),
         'ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f',
@@ -109,7 +109,7 @@ void main() {
 
     test('SHA3-256 known test vector', () async {
       final data = Uint8List.fromList('abc'.codeUnits);
-      final digest = await Hash.hash(HashAlgorithm.sha3_256, data);
+      final digest = await CryptoHash.hash(HashAlgorithm.sha3_256, data);
       expect(
         toHex(digest),
         '3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532',
@@ -118,7 +118,7 @@ void main() {
 
     test('BLAKE3 known test vector', () async {
       final data = Uint8List.fromList('abc'.codeUnits);
-      final digest = await Hash.hash(HashAlgorithm.blake3, data);
+      final digest = await CryptoHash.hash(HashAlgorithm.blake3, data);
       expect(
         toHex(digest),
         '6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85',
@@ -130,12 +130,12 @@ void main() {
       final chunk2 = Uint8List.fromList('world'.codeUnits);
       final fullData = Uint8List.fromList('hello world'.codeUnits);
 
-      final hasher = await Hasher.create(HashAlgorithm.sha256);
+      final hasher = await CryptoHasher.create(HashAlgorithm.sha256);
       await hasher.update(chunk1);
       await hasher.update(chunk2);
       final streamingDigest = await hasher.finalize();
 
-      final oneshotDigest = await Hash.hash(HashAlgorithm.sha256, fullData);
+      final oneshotDigest = await CryptoHash.hash(HashAlgorithm.sha256, fullData);
 
       expect(streamingDigest, oneshotDigest);
     });
@@ -149,8 +149,8 @@ void main() {
       final fullData = Uint8List.fromList(chunks.expand((x) => x).toList());
 
       final stream = Stream.fromIterable(chunks);
-      final streamDigest = await Hash.hashStream(HashAlgorithm.sha256, stream);
-      final oneshotDigest = await Hash.hash(HashAlgorithm.sha256, fullData);
+      final streamDigest = await CryptoHash.hashStream(HashAlgorithm.sha256, stream);
+      final oneshotDigest = await CryptoHash.hash(HashAlgorithm.sha256, fullData);
 
       expect(streamDigest, oneshotDigest);
     });

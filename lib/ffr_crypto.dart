@@ -68,7 +68,7 @@ void _checkStatus(int code, String action) {
 
 // --- CSPRNG Random ---
 
-class Random {
+class CryptoRandom {
   /// Generates [length] cryptographically secure random bytes.
   static Future<Uint8List> secureBytes(int length) async {
     if (length <= 0) {
@@ -327,14 +327,14 @@ class Rsa {
 
 enum HashAlgorithm { sha256, sha512, sha3_256, sha3_512, blake3 }
 
-class Hasher {
+class CryptoHasher {
   final HashAlgorithm algorithm;
   ffi.Pointer<bindings.HasherContext> _context;
   bool _isFinalized = false;
 
-  Hasher._(this.algorithm, this._context);
+  CryptoHasher._(this.algorithm, this._context);
 
-  static Future<Hasher> create(HashAlgorithm algorithm) async {
+  static Future<CryptoHasher> create(HashAlgorithm algorithm) async {
     final contextAddr = await Isolate.run(() async {
       final outPtr = calloc<ffi.Pointer<bindings.HasherContext>>();
       try {
@@ -345,7 +345,7 @@ class Hasher {
         calloc.free(outPtr);
       }
     });
-    return Hasher._(algorithm, ffi.Pointer.fromAddress(contextAddr));
+    return CryptoHasher._(algorithm, ffi.Pointer.fromAddress(contextAddr));
   }
 
   Future<void> update(Uint8List data) async {
@@ -423,10 +423,10 @@ class Hasher {
   }
 }
 
-class Hash {
+class CryptoHash {
   /// One-shot hash helper.
   static Future<Uint8List> hash(HashAlgorithm algorithm, Uint8List data) async {
-    final hasher = await Hasher.create(algorithm);
+    final hasher = await CryptoHasher.create(algorithm);
     try {
       await hasher.update(data);
       return await hasher.finalize();
@@ -441,7 +441,7 @@ class Hash {
     HashAlgorithm algorithm,
     Stream<List<int>> stream,
   ) async {
-    final hasher = await Hasher.create(algorithm);
+    final hasher = await CryptoHasher.create(algorithm);
     try {
       await for (final chunk in stream) {
         await hasher.update(Uint8List.fromList(chunk));
