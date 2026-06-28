@@ -1,3 +1,9 @@
+## 0.0.3
+
+- Fix class reference renames (`CryptoRandom` and `CryptoHash`) in the example application (`example/lib/main.dart`).
+
+---
+
 ## 0.0.2
 
 ### Breaking Changes
