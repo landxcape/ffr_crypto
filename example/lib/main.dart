@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _generateRandom() async {
     try {
-      final bytes = await Random.secureBytes(16);
+      final bytes = await CryptoRandom.secureBytes(16);
       setState(() {
         _randomBytesHex = _toHex(bytes);
       });
@@ -75,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _calculateHash(HashAlgorithm algorithm) async {
     try {
       final data = Uint8List.fromList(_hashController.text.codeUnits);
-      final digest = await Hash.hash(algorithm, data);
+      final digest = await CryptoHash.hash(algorithm, data);
       setState(() {
         _hashResult = '${algorithm.name.toUpperCase()}: ${_toHex(digest)}';
       });
