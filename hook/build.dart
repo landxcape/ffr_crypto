@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'package:logging/logging.dart';
-import 'package:hooks/hooks.dart';
+
 import 'package:code_assets/code_assets.dart';
+import 'package:hooks/hooks.dart';
 
 void main(List<String> args) async {
   await build(args, (input, output) async {
@@ -67,22 +67,14 @@ void main(List<String> args) async {
       cargoArgs.addAll(['--target', cargoTarget]);
     }
 
-    final result = await Process.run(
-      'cargo',
-      cargoArgs,
-      workingDirectory: rustDir.path,
-    );
+    final result = await Process.run('cargo', cargoArgs, workingDirectory: rustDir.path);
 
     if (result.exitCode != 0) {
-      throw Exception(
-        'Cargo build failed:\n${result.stderr}\n${result.stdout}',
-      );
+      throw Exception('Cargo build failed:\n${result.stderr}\n${result.stdout}');
     }
 
     // Find the built library
-    final String targetSubdir = cargoTarget != null
-        ? 'target/$cargoTarget/release'
-        : 'target/release';
+    final String targetSubdir = cargoTarget != null ? 'target/$cargoTarget/release' : 'target/release';
     var libUri = rustDir.uri.resolve('$targetSubdir/$libName');
 
     // Copy the library to the outputDirectory to bundle it
@@ -91,9 +83,7 @@ void main(List<String> args) async {
     final File srcFile = File.fromUri(libUri);
     if (!await srcFile.exists()) {
       // Try default release if cargo target fallback was used
-      final File fallbackFile = File.fromUri(
-        rustDir.uri.resolve('target/release/$libName'),
-      );
+      final File fallbackFile = File.fromUri(rustDir.uri.resolve('target/release/$libName'));
       if (await fallbackFile.exists()) {
         libUri = fallbackFile.uri;
       } else {
@@ -105,12 +95,7 @@ void main(List<String> args) async {
     await File.fromUri(libUri).copy(destFile.path);
 
     output.assets.code.add(
-      CodeAsset(
-        package: packageName,
-        name: 'src/${packageName}_bindings_generated.dart',
-        file: destFile.uri,
-        linkMode: DynamicLoadingBundled(),
-      ),
+      CodeAsset(package: packageName, name: 'src/${packageName}_bindings_generated.dart', file: destFile.uri, linkMode: DynamicLoadingBundled()),
       routing: const ToAppBundle(),
     );
 
