@@ -1,0 +1,17 @@
+# Run with `dart run ffigen --config ffigen.yaml`.
+name: FfrCryptoBindings
+description: |
+  Bindings for `rust/ffr_crypto.h`.
+
+  Regenerate bindings with `dart run ffigen --config ffigen.yaml`.
+output: 'lib/src/ffr_crypto_bindings_generated.dart'
+headers:
+  entry-points:
+    - 'rust/ffr_crypto.h'
+  include-directives:
+    - 'rust/ffr_crypto.h'
+ffi-native:
+comments:
+  style: any
+  length: full
+
