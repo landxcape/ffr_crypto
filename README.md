@@ -44,7 +44,8 @@ Add the package dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ffr_crypto: ^0.0.1
+dependencies:
+  ffr_crypto: ^0.0.3
 ```
 
 ### Prerequisites — Rust Toolchain
@@ -79,7 +80,7 @@ rustup target add x86_64-pc-windows-msvc
 ```dart
 import 'package:ffr_crypto/ffr_crypto.dart';
 
-Uint8List bytes = await Random.secureBytes(32);
+Uint8List bytes = await CryptoRandom.secureBytes(32);
 ```
 
 ### 2. Hashing (One-shot & Streaming)
@@ -87,10 +88,10 @@ Uint8List bytes = await Random.secureBytes(32);
 import 'package:ffr_crypto/ffr_crypto.dart';
 
 // One-shot
-Uint8List sha256Digest = await Hash.hash(HashAlgorithm.sha256, bytes);
+Uint8List sha256Digest = await CryptoHash.hash(HashAlgorithm.sha256, bytes);
 
 // Incremental/Streaming
-final hasher = await Hasher.create(HashAlgorithm.blake3);
+final hasher = await CryptoHasher.create(HashAlgorithm.blake3);
 await hasher.update(chunk1);
 await hasher.update(chunk2);
 Uint8List blake3Digest = await hasher.finalize(); // Context is automatically freed
@@ -161,4 +162,46 @@ Uint8List decrypted = await HybridEncryption.decrypt(
   recipientPrivateKey: recipientPrivateKey,
   payload: payload,
 );
+```
+
+### 7. Safe Resource Management (Streaming)
+Since `CryptoHasher` retains a native pointer in Rust memory, you must ensure that memory is freed. Calling `finalize()` automatically releases the native resources, but if an error occurs beforehand, you must catch the error and free it manually:
+
+```dart
+import 'package:ffr_crypto/ffr_crypto.dart';
+
+final hasher = await CryptoHasher.create(HashAlgorithm.blake3);
+try {
+  await hasher.update(chunk1);
+  await hasher.update(chunk2);
+  
+  // finalize() automatically cleans up native memory context
+  final digest = await hasher.finalize(); 
+} catch (e) {
+  // Free native resource if hash finalize was never reached
+  hasher.free(); 
+  rethrow;
+}
+```
+
+### 8. Exception Handling
+All cryptographic and memory status boundaries throw specific exceptions subclassed from `CryptoException`:
+
+```dart
+import 'package:ffr_crypto/ffr_crypto.dart';
+
+try {
+  final decrypted = await AesGcm.decrypt(
+    key: key,
+    ciphertext: manipulatedCiphertext,
+    nonce: nonce,
+  );
+} on DecryptionException catch (e) {
+  // Thrown if integrity check (AEAD tag) fails
+  print('Decryption failed: Integrity check error.');
+} on InvalidKeyException catch (e) {
+  print('Decryption failed: Key is invalid.');
+} on CryptoException catch (e) {
+  print('An unexpected cryptographic error occurred: ${e.message}');
+}
 ```

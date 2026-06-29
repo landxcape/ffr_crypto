@@ -1,3 +1,9 @@
+## 0.0.4
+
+- Fix leftover class name references (`CryptoRandom`, `CryptoHash`, `CryptoHasher`) in the README.md usage examples.
+
+---
+
 ## 0.0.3
 
 - Fix class reference renames (`CryptoRandom` and `CryptoHash`) in the example application (`example/lib/main.dart`).
