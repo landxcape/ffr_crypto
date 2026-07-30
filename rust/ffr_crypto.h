@@ -5,6 +5,20 @@
 
 void ffr_crypto_free_string(char* ptr);
 void ffr_crypto_free_bytes(unsigned char* ptr, size_t len);
+
+int ffr_crypto_rsa_pkcs1v15_public_recover(
+    const char* public_key_pem,
+    const unsigned char* input,
+    size_t input_len,
+    unsigned char** out_payload,
+    size_t* out_len);
+
+int ffr_crypto_constant_time_equals(
+    const unsigned char* left,
+    size_t left_len,
+    const unsigned char* right,
+    size_t right_len,
+    unsigned char* out_equal);
 int ffr_crypto_random_bytes(unsigned char* buf, size_t len);
 int ffr_crypto_rsa_generate_keypair(unsigned int key_size, char** pub_pem, char** priv_pem);
 int ffr_crypto_rsa_encrypt(const char* pub_key_pem, const unsigned char* plaintext, size_t plaintext_len, unsigned char** out_ciphertext, size_t* out_len);

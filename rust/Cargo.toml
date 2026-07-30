@@ -8,7 +8,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 rand = { version = "0.8", features = ["std"] }
-rsa = { version = "0.9", features = ["pem", "sha2"] }
+rsa = { version = "0.9", features = ["hazmat", "pem", "sha2"] }
 sha2 = "0.10"
 sha3 = "0.10"
 blake3 = "1.5"
@@ -19,5 +19,6 @@ hkdf = "0.12"
 argon2 = "0.5"
 ed25519-dalek = "2.1"
 x25519-dalek = { version = "2.0", features = ["static_secrets"] }
-
+subtle = "2.6"
+zeroize = "1.8"
 

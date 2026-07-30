@@ -6,3 +6,4 @@ pub(crate) const ERROR_DECRYPTION_FAILED: i32 = 4;
 pub(crate) const ERROR_SIGNING_FAILED: i32 = 5;
 pub(crate) const ERROR_VERIFICATION_FAILED: i32 = 6;
 pub(crate) const ERROR_INVALID_INPUT: i32 = 7;
+pub(crate) const ERROR_RSA_RECOVERY_FAILED: i32 = 8;

@@ -295,7 +295,9 @@ dependencies = [
  "rsa",
  "sha2",
  "sha3",
+ "subtle",
  "x25519-dalek",
+ "zeroize",
 ]
 
 [[package]]
