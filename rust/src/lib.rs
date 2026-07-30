@@ -1,10 +1,12 @@
+use rand::rngs::OsRng;
+use rand::RngCore;
+use rsa::pkcs8::{
+    DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey, LineEnding,
+};
+use rsa::{Oaep, Pss, RsaPrivateKey, RsaPublicKey};
+use sha2::{Sha256, Sha512};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use rand::RngCore;
-use rand::rngs::OsRng;
-use rsa::{RsaPrivateKey, RsaPublicKey, Oaep, Pss};
-use rsa::pkcs8::{EncodePublicKey, EncodePrivateKey, DecodePublicKey, DecodePrivateKey, LineEnding};
-use sha2::{Sha256, Sha512};
 
 // --- Error Codes ---
 pub const SUCCESS: i32 = 0;
@@ -18,6 +20,11 @@ pub const ERROR_INVALID_INPUT: i32 = 7;
 
 // --- Helper macros/functions for memory management ---
 
+/// Releases a string allocated by this library.
+///
+/// # Safety
+/// `ptr` must be null or a live pointer returned by this library from
+/// `CString::into_raw`, and it must not have been released previously.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_free_string(ptr: *mut c_char) {
     if !ptr.is_null() {
@@ -25,6 +32,11 @@ pub unsafe extern "C" fn ffr_crypto_free_string(ptr: *mut c_char) {
     }
 }
 
+/// Releases a byte buffer allocated by this library.
+///
+/// # Safety
+/// `ptr` must be null or a live byte buffer returned by this library, `len`
+/// must be its exact length, and the buffer must not have been released before.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_free_bytes(ptr: *mut u8, len: usize) {
     if !ptr.is_null() {
@@ -34,6 +46,10 @@ pub unsafe extern "C" fn ffr_crypto_free_bytes(ptr: *mut u8, len: usize) {
 
 // --- Cryptographically Secure Pseudo-Random Number Generator (CSPRNG) ---
 
+/// Fills a caller-owned buffer with cryptographically secure random bytes.
+///
+/// # Safety
+/// `buf` must be valid for writes of `len` bytes for the duration of the call.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_random_bytes(buf: *mut u8, len: usize) -> i32 {
     if buf.is_null() || len == 0 {
@@ -48,6 +64,11 @@ pub unsafe extern "C" fn ffr_crypto_random_bytes(buf: *mut u8, len: usize) -> i3
 
 // --- RSA Keypair Generation ---
 
+/// Generates an RSA keypair and returns library-owned PEM strings.
+///
+/// # Safety
+/// `pub_pem` and `priv_pem` must be valid writable pointers. Successful outputs
+/// must later be released with `ffr_crypto_free_string` exactly once.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_rsa_generate_keypair(
     key_size: u32,
@@ -102,6 +123,12 @@ pub unsafe extern "C" fn ffr_crypto_rsa_generate_keypair(
 
 // --- RSA-OAEP Encryption ---
 
+/// Encrypts bytes with an SPKI PEM RSA public key using OAEP-SHA-256.
+///
+/// # Safety
+/// The PEM must be NUL-terminated; `plaintext` must be readable for
+/// `plaintext_len` bytes; output pointers must be writable. A successful output
+/// must be released with `ffr_crypto_free_bytes` using the returned length.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_rsa_encrypt(
     pub_key_pem: *const c_char,
@@ -110,7 +137,8 @@ pub unsafe extern "C" fn ffr_crypto_rsa_encrypt(
     out_ciphertext: *mut *mut u8,
     out_len: *mut usize,
 ) -> i32 {
-    if pub_key_pem.is_null() || plaintext.is_null() || out_ciphertext.is_null() || out_len.is_null() {
+    if pub_key_pem.is_null() || plaintext.is_null() || out_ciphertext.is_null() || out_len.is_null()
+    {
         return ERROR_INVALID_INPUT;
     }
 
@@ -144,6 +172,12 @@ pub unsafe extern "C" fn ffr_crypto_rsa_encrypt(
 
 // --- RSA-OAEP Decryption ---
 
+/// Decrypts bytes with a PKCS#8 PEM RSA private key using OAEP-SHA-256.
+///
+/// # Safety
+/// The PEM must be NUL-terminated; `ciphertext` must be readable for
+/// `ciphertext_len` bytes; output pointers must be writable. A successful output
+/// must be released with `ffr_crypto_free_bytes` using the returned length.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_rsa_decrypt(
     priv_key_pem: *const c_char,
@@ -152,7 +186,11 @@ pub unsafe extern "C" fn ffr_crypto_rsa_decrypt(
     out_plaintext: *mut *mut u8,
     out_len: *mut usize,
 ) -> i32 {
-    if priv_key_pem.is_null() || ciphertext.is_null() || out_plaintext.is_null() || out_len.is_null() {
+    if priv_key_pem.is_null()
+        || ciphertext.is_null()
+        || out_plaintext.is_null()
+        || out_len.is_null()
+    {
         return ERROR_INVALID_INPUT;
     }
 
@@ -185,6 +223,12 @@ pub unsafe extern "C" fn ffr_crypto_rsa_decrypt(
 
 // --- RSA-PSS Signing ---
 
+/// Signs a precomputed SHA-256 digest with RSA-PSS.
+///
+/// # Safety
+/// The PEM must be NUL-terminated; `digest` must be readable for `digest_len`
+/// bytes; output pointers must be writable. A successful signature must be
+/// released with `ffr_crypto_free_bytes` using the returned length.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_rsa_sign(
     priv_key_pem: *const c_char,
@@ -227,6 +271,11 @@ pub unsafe extern "C" fn ffr_crypto_rsa_sign(
 
 // --- RSA-PSS Verification ---
 
+/// Verifies an RSA-PSS signature against a precomputed SHA-256 digest.
+///
+/// # Safety
+/// The PEM must be NUL-terminated. `digest` and `sig` must be readable for their
+/// corresponding lengths for the duration of the call.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_rsa_verify(
     pub_key_pem: *const c_char,
@@ -262,20 +311,28 @@ pub unsafe extern "C" fn ffr_crypto_rsa_verify(
 
 // --- Stateful Hashing API ---
 
+use blake3::Hasher as Blake3Hasher;
 use sha2::Digest as Sha2Digest;
 use sha3::{Sha3_256, Sha3_512};
-use blake3::Hasher as Blake3Hasher;
 
 pub enum HasherContext {
     Sha256(Sha256),
     Sha512(Sha512),
     Sha3_256(Sha3_256),
     Sha3_512(Sha3_512),
-    Blake3(Blake3Hasher),
+    Blake3(Box<Blake3Hasher>),
 }
 
+/// Creates an opaque streaming hash context.
+///
+/// # Safety
+/// `out_hasher` must be writable. On success, the returned context must be used
+/// only with this library and finalized or freed exactly once.
 #[no_mangle]
-pub unsafe extern "C" fn ffr_crypto_hasher_new(alg_id: i32, out_hasher: *mut *mut HasherContext) -> i32 {
+pub unsafe extern "C" fn ffr_crypto_hasher_new(
+    alg_id: i32,
+    out_hasher: *mut *mut HasherContext,
+) -> i32 {
     if out_hasher.is_null() {
         return ERROR_INVALID_INPUT;
     }
@@ -284,15 +341,24 @@ pub unsafe extern "C" fn ffr_crypto_hasher_new(alg_id: i32, out_hasher: *mut *mu
         1 => HasherContext::Sha512(Sha512::new()),
         2 => HasherContext::Sha3_256(Sha3_256::new()),
         3 => HasherContext::Sha3_512(Sha3_512::new()),
-        4 => HasherContext::Blake3(Blake3Hasher::new()),
+        4 => HasherContext::Blake3(Box::new(Blake3Hasher::new())),
         _ => return ERROR_INVALID_INPUT,
     };
     *out_hasher = Box::into_raw(Box::new(context));
     SUCCESS
 }
 
+/// Adds bytes to an opaque streaming hash context.
+///
+/// # Safety
+/// `hasher` must be a live context returned by this library. `data` must be
+/// readable for `len` bytes when `len` is nonzero.
 #[no_mangle]
-pub unsafe extern "C" fn ffr_crypto_hasher_update(hasher: *mut HasherContext, data: *const u8, len: usize) -> i32 {
+pub unsafe extern "C" fn ffr_crypto_hasher_update(
+    hasher: *mut HasherContext,
+    data: *const u8,
+    len: usize,
+) -> i32 {
     if hasher.is_null() || (data.is_null() && len > 0) {
         return ERROR_INVALID_INPUT;
     }
@@ -310,6 +376,12 @@ pub unsafe extern "C" fn ffr_crypto_hasher_update(hasher: *mut HasherContext, da
     SUCCESS
 }
 
+/// Finalizes and consumes an opaque streaming hash context.
+///
+/// # Safety
+/// `hasher` must be a live context returned by this library and not previously
+/// consumed. Output pointers must be writable; the returned digest must later be
+/// released with `ffr_crypto_free_bytes` using its returned length.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_hasher_finalize(
     hasher: *mut HasherContext,
@@ -327,7 +399,7 @@ pub unsafe extern "C" fn ffr_crypto_hasher_finalize(
         HasherContext::Sha3_512(h) => h.finalize().to_vec(),
         HasherContext::Blake3(h) => h.finalize().as_bytes().to_vec(),
     };
-    
+
     let len = digest.len();
     let mut vec_boxed = digest.into_boxed_slice();
     *out_digest = vec_boxed.as_mut_ptr();
@@ -336,6 +408,11 @@ pub unsafe extern "C" fn ffr_crypto_hasher_finalize(
     SUCCESS
 }
 
+/// Releases an opaque streaming hash context without finalizing it.
+///
+/// # Safety
+/// `hasher` must be null or a live context returned by this library, and it must
+/// not have been finalized or freed previously.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_hasher_free(hasher: *mut HasherContext) {
     if !hasher.is_null() {
@@ -345,11 +422,17 @@ pub unsafe extern "C" fn ffr_crypto_hasher_free(hasher: *mut HasherContext) {
 
 // --- Symmetric Encryption (AES-GCM & ChaCha20-Poly1305) ---
 
+use aes_gcm::aead::generic_array::GenericArray;
+use aes_gcm::aead::{Aead, KeyInit, Payload};
 use aes_gcm::{Aes128Gcm, Aes256Gcm};
 use chacha20poly1305::ChaCha20Poly1305;
-use aes_gcm::aead::{Aead, Payload, KeyInit};
-use aes_gcm::aead::generic_array::GenericArray;
 
+/// Encrypts bytes with AES-GCM.
+///
+/// # Safety
+/// Required input pointers must be readable for their lengths, the nonce must
+/// contain 12 bytes, optional AAD must be readable when present, and output
+/// pointers must be writable. The returned buffer must be freed by this library.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_aes_gcm_encrypt(
     key: *const u8,
@@ -363,7 +446,12 @@ pub unsafe extern "C" fn ffr_crypto_aes_gcm_encrypt(
     out_ciphertext: *mut *mut u8,
     out_len: *mut usize,
 ) -> i32 {
-    if key.is_null() || plaintext.is_null() || nonce.is_null() || out_ciphertext.is_null() || out_len.is_null() {
+    if key.is_null()
+        || plaintext.is_null()
+        || nonce.is_null()
+        || out_ciphertext.is_null()
+        || out_len.is_null()
+    {
         return ERROR_INVALID_INPUT;
     }
     if nonce_len != 12 {
@@ -417,6 +505,12 @@ pub unsafe extern "C" fn ffr_crypto_aes_gcm_encrypt(
     }
 }
 
+/// Decrypts bytes with AES-GCM.
+///
+/// # Safety
+/// Required input pointers must be readable for their lengths, the nonce must
+/// contain 12 bytes, optional AAD must be readable when present, and output
+/// pointers must be writable. The returned buffer must be freed by this library.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_aes_gcm_decrypt(
     key: *const u8,
@@ -430,7 +524,12 @@ pub unsafe extern "C" fn ffr_crypto_aes_gcm_decrypt(
     out_plaintext: *mut *mut u8,
     out_len: *mut usize,
 ) -> i32 {
-    if key.is_null() || ciphertext.is_null() || nonce.is_null() || out_plaintext.is_null() || out_len.is_null() {
+    if key.is_null()
+        || ciphertext.is_null()
+        || nonce.is_null()
+        || out_plaintext.is_null()
+        || out_len.is_null()
+    {
         return ERROR_INVALID_INPUT;
     }
     if nonce_len != 12 {
@@ -484,6 +583,12 @@ pub unsafe extern "C" fn ffr_crypto_aes_gcm_decrypt(
     }
 }
 
+/// Encrypts bytes with ChaCha20-Poly1305.
+///
+/// # Safety
+/// Required input pointers must be readable for their lengths, the key and nonce
+/// must contain 32 and 12 bytes, optional AAD must be readable when present, and
+/// output pointers must be writable. The returned buffer must be freed here.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_chacha20_poly1305_encrypt(
     key: *const u8,
@@ -497,7 +602,12 @@ pub unsafe extern "C" fn ffr_crypto_chacha20_poly1305_encrypt(
     out_ciphertext: *mut *mut u8,
     out_len: *mut usize,
 ) -> i32 {
-    if key.is_null() || plaintext.is_null() || nonce.is_null() || out_ciphertext.is_null() || out_len.is_null() {
+    if key.is_null()
+        || plaintext.is_null()
+        || nonce.is_null()
+        || out_ciphertext.is_null()
+        || out_len.is_null()
+    {
         return ERROR_INVALID_INPUT;
     }
     if key_len != 32 || nonce_len != 12 {
@@ -538,6 +648,12 @@ pub unsafe extern "C" fn ffr_crypto_chacha20_poly1305_encrypt(
     }
 }
 
+/// Decrypts bytes with ChaCha20-Poly1305.
+///
+/// # Safety
+/// Required input pointers must be readable for their lengths, the key and nonce
+/// must contain 32 and 12 bytes, optional AAD must be readable when present, and
+/// output pointers must be writable. The returned buffer must be freed here.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_chacha20_poly1305_decrypt(
     key: *const u8,
@@ -551,7 +667,12 @@ pub unsafe extern "C" fn ffr_crypto_chacha20_poly1305_decrypt(
     out_plaintext: *mut *mut u8,
     out_len: *mut usize,
 ) -> i32 {
-    if key.is_null() || ciphertext.is_null() || nonce.is_null() || out_plaintext.is_null() || out_len.is_null() {
+    if key.is_null()
+        || ciphertext.is_null()
+        || nonce.is_null()
+        || out_plaintext.is_null()
+        || out_len.is_null()
+    {
         return ERROR_INVALID_INPUT;
     }
     if key_len != 32 || nonce_len != 12 {
@@ -594,10 +715,17 @@ pub unsafe extern "C" fn ffr_crypto_chacha20_poly1305_decrypt(
 
 // --- Key Derivation Functions (KDFs) ---
 
-use pbkdf2::pbkdf2;
+use argon2::{
+    Algorithm as Argon2Algorithm, Argon2, Params as Argon2Params, Version as Argon2Version,
+};
 use hkdf::Hkdf;
-use argon2::{Argon2, Algorithm as Argon2Algorithm, Version as Argon2Version, Params as Argon2Params};
+use pbkdf2::pbkdf2;
 
+/// Derives bytes with PBKDF2-HMAC-SHA-256.
+///
+/// # Safety
+/// Password and salt pointers must be readable for their lengths and `out_key`
+/// must be writable for `out_key_len` bytes.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_pbkdf2(
     password: *const u8,
@@ -622,6 +750,11 @@ pub unsafe extern "C" fn ffr_crypto_pbkdf2(
     }
 }
 
+/// Derives bytes with HKDF-SHA-256.
+///
+/// # Safety
+/// `ikm` must be readable for `ikm_len`, optional salt and info pointers must be
+/// readable when present, and `out_key` must be writable for `out_key_len` bytes.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_hkdf(
     ikm: *const u8,
@@ -638,7 +771,7 @@ pub unsafe extern "C" fn ffr_crypto_hkdf(
     }
 
     let ikm_slice = std::slice::from_raw_parts(ikm, ikm_len);
-    
+
     let salt_slice = if salt.is_null() || salt_len == 0 {
         None
     } else {
@@ -660,6 +793,11 @@ pub unsafe extern "C" fn ffr_crypto_hkdf(
     }
 }
 
+/// Derives bytes with the selected Argon2 variant.
+///
+/// # Safety
+/// Password and salt pointers must be readable for their lengths and `out_key`
+/// must be writable for `out_key_len` bytes.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_argon2(
     password: *const u8,
@@ -703,9 +841,15 @@ pub unsafe extern "C" fn ffr_crypto_argon2(
 
 // --- Elliptic Curve Cryptography (Ed25519 & X25519) ---
 
-use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer as EdSigner, Verifier as EdVerifier};
-use x25519_dalek::{StaticSecret, PublicKey as XPublicKey};
+use ed25519_dalek::{
+    Signature, Signer as EdSigner, SigningKey, Verifier as EdVerifier, VerifyingKey,
+};
+use x25519_dalek::{PublicKey as XPublicKey, StaticSecret};
 
+/// Generates an Ed25519 keypair into caller-owned fixed-size buffers.
+///
+/// # Safety
+/// `out_pub` and `out_priv` must each be writable for 32 bytes.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_ed25519_generate_keypair(
     out_pub: *mut u8,
@@ -729,6 +873,11 @@ pub unsafe extern "C" fn ffr_crypto_ed25519_generate_keypair(
     SUCCESS
 }
 
+/// Signs a message with a raw Ed25519 private key.
+///
+/// # Safety
+/// `priv_key` must be readable for 32 bytes, `message` for `message_len` bytes,
+/// and `out_sig` must be writable for 64 bytes.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_ed25519_sign(
     priv_key: *const u8,
@@ -756,6 +905,11 @@ pub unsafe extern "C" fn ffr_crypto_ed25519_sign(
     SUCCESS
 }
 
+/// Verifies an Ed25519 signature.
+///
+/// # Safety
+/// `pub_key` and `sig` must be readable for 32 and 64 bytes respectively, and
+/// `message` must be readable for `message_len` bytes.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_ed25519_verify(
     pub_key: *const u8,
@@ -792,6 +946,10 @@ pub unsafe extern "C" fn ffr_crypto_ed25519_verify(
     }
 }
 
+/// Generates an X25519 keypair into caller-owned fixed-size buffers.
+///
+/// # Safety
+/// `out_pub` and `out_priv` must each be writable for 32 bytes.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_x25519_generate_keypair(
     out_pub: *mut u8,
@@ -801,8 +959,8 @@ pub unsafe extern "C" fn ffr_crypto_x25519_generate_keypair(
         return ERROR_INVALID_INPUT;
     }
 
-    let mut rng = OsRng;
-    let secret = StaticSecret::random_from_rng(&mut rng);
+    let rng = OsRng;
+    let secret = StaticSecret::random_from_rng(rng);
     let public = XPublicKey::from(&secret);
 
     let out_pub_slice = std::slice::from_raw_parts_mut(out_pub, 32);
@@ -814,6 +972,11 @@ pub unsafe extern "C" fn ffr_crypto_x25519_generate_keypair(
     SUCCESS
 }
 
+/// Computes an X25519 shared secret from raw keys.
+///
+/// # Safety
+/// `priv_key` and `peer_pub_key` must each be readable for 32 bytes, and
+/// `out_secret` must be writable for 32 bytes.
 #[no_mangle]
 pub unsafe extern "C" fn ffr_crypto_x25519_compute_shared_secret(
     priv_key: *const u8,
@@ -845,7 +1008,3 @@ pub unsafe extern "C" fn ffr_crypto_x25519_compute_shared_secret(
 
     SUCCESS
 }
-
-
-
-
