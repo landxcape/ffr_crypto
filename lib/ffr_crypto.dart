@@ -1,3 +1,7 @@
+/// Safe high-level cryptographic APIs backed by the package's Rust library.
+///
+/// This is the stable core entrypoint. Advanced compatibility primitives and
+/// typed workflows are available through separate explicit package imports.
 library;
 
 export 'src/core/aead.dart';

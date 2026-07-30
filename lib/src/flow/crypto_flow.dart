@@ -25,6 +25,9 @@ final class _ErasedStage {
 }
 
 /// An immutable typed pipeline representing one single-use execution.
+///
+/// Appending a step creates a fresh independently runnable flow and does not
+/// consume this instance. Each individual flow instance may call [run] once.
 final class CryptoFlow<Current> {
   final _FlowSource _source;
   final List<_ErasedStage> _stages;
@@ -43,24 +46,36 @@ final class CryptoFlow<Current> {
   }
 
   /// Creates a lazy strict hexadecimal source.
+  ///
+  /// Decoding occurs during [run]. The value must have an even number of digits
+  /// and contain no prefix, separator, or whitespace.
   static CryptoFlow<Uint8List> fromHex(String value) => CryptoFlow._(
     _FlowSource('source.hex', () => CryptoBytes.decodeHex(value)),
     const [],
   );
 
-  /// Creates a lazy strict canonical Base64 source.
+  /// Creates a lazy strict canonical padded standard Base64 source.
+  ///
+  /// Decoding occurs during [run]. URL-safe, unpadded, whitespace-containing,
+  /// and otherwise noncanonical representations are rejected.
   static CryptoFlow<Uint8List> fromBase64(String value) => CryptoFlow._(
     _FlowSource('source.base64', () => CryptoBytes.decodeBase64(value)),
     const [],
   );
 
-  /// Creates a lazy UTF-8 source.
+  /// Creates a lazy strict UTF-8 source.
+  ///
+  /// Encoding occurs during [run]. Unpaired UTF-16 surrogate code units are
+  /// rejected instead of being replaced.
   static CryptoFlow<Uint8List> fromUtf8(String value) => CryptoFlow._(
     _FlowSource('source.utf8', () => _strictUtf8Encode(value)),
     const [],
   );
 
   /// Appends a package-defined step whose input matches the current flow type.
+  ///
+  /// The returned flow is a fresh single-use instance. This flow remains
+  /// independently runnable.
   CryptoFlow<Next> then<Next>(CryptoStep<Current, Next> step) =>
       CryptoFlow<Next>._(_source, [
         ..._stages,
@@ -68,6 +83,10 @@ final class CryptoFlow<Current> {
       ]);
 
   /// Appends an explicit caller-controlled synchronous or asynchronous step.
+  ///
+  /// [name] must not be blank and is included in contextual failures. The
+  /// caller owns the transform's security properties, resources, and internal
+  /// cancellation behavior.
   CryptoFlow<Next> thenCustom<Next>(
     String name,
     FutureOr<Next> Function(Current input) transform,
@@ -79,6 +98,14 @@ final class CryptoFlow<Current> {
   }
 
   /// Executes this flow exactly once and returns its final typed value.
+  ///
+  /// Cancellation is cooperative and is checked before and after the source and
+  /// every step. An active operation is allowed to finish; its result is then
+  /// discarded when cancellation is observed.
+  ///
+  /// Source and step failures are wrapped in [CryptoFlowException] with the
+  /// original cause and stack trace. Reuse throws [CryptoFlowStateException],
+  /// while observed cancellation throws [CryptoFlowCancelledException].
   Future<Current> run({CryptoCancellationToken? cancellationToken}) async {
     if (_hasRun) {
       throw CryptoFlowStateException('A crypto flow can only be run once');

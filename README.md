@@ -46,7 +46,7 @@ Add the package dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ffr_crypto: ^0.0.4
+  ffr_crypto: <latest>
 ```
 
 ### Choose explicit package layers
@@ -243,7 +243,17 @@ Future<Uint8List> recoverCompatibilityPayload(
 
 This is payload recovery for compatibility protocols. It is not standard RSASSA-PKCS1-v1_5 verification and it does not decide what the recovered payload means. Standard RSASSA-PKCS1-v1_5 includes an ASN.1 `DigestInfo`; raw recovered payloads do not. Existing `Rsa.sign` and `Rsa.verify` remain RSA-PSS with SHA-256 digests.
 
+The public key may use SPKI (`PUBLIC KEY`) or PKCS#1 (`RSA PUBLIC KEY`) PEM encoding. The transformed block must be exactly the RSA modulus length. Invalid keys, lengths, representatives, padding, and payloads fail without exposing which recovery check rejected the input.
+
 `CryptoBytes` provides strict hexadecimal and canonical padded standard Base64 conversion. It rejects whitespace, prefixes, URL-safe Base64, implicit unpadded Base64, and noncanonical encodings. Equal-length `constantTimeEquals` calls Rust's `subtle` comparison; different public lengths return `false`. Input lengths are not secret, and correctness tests do not prove physical timing behavior.
+
+```dart
+import 'package:ffr_crypto/ffr_crypto_primitives.dart';
+
+final bytes = CryptoBytes.decodeHex('001aff');
+final canonicalBase64 = CryptoBytes.encodeBase64(bytes);
+final matches = await CryptoBytes.constantTimeEquals(bytes, expectedBytes);
+```
 
 ## Typed Crypto Flows
 

@@ -1,3 +1,9 @@
+/// Typed, immutable, single-use cryptographic workflows.
+///
+/// This library provides flow sources, package-defined steps, explicit custom
+/// transformations, cooperative cancellation, and contextual failures. It does
+/// not re-export the core or primitives entrypoints; import every package layer
+/// used by an application explicitly.
 library;
 
 import 'dart:async';
