@@ -19,7 +19,8 @@ A Flutter-first, Rust-powered native cryptography package using Dart FFI and Flu
 - **Typed Workflows:** Optional immutable, single-use pipelines with analyzer-checked step types, explicit custom boundaries, cancellation, and contextual errors.
 
 ## Performance & Design
-- **Off-Thread Processing:** All computationally expensive operations (RSA, KDFs, Hybrid, Signatures) run asynchronously on background Dart Isolates (`Isolate.run`), preventing UI frames from dropping.
+
+- **Off-Thread Processing:** Computationally expensive operations such as RSA, key derivation, hybrid encryption, and signatures run asynchronously on background Dart isolates (`Isolate.run`), preventing UI frames from dropping.
 - **Native Assets Pipeline:** Uses modern Flutter native assets build hooks (`hook/build.dart`) to compile the underlying Rust library automatically.
 - **Robust Error Handling:** Translates C-ABI status codes into clear, typed `CryptoException` subclasses.
 
@@ -27,7 +28,7 @@ A Flutter-first, Rust-powered native cryptography package using Dart FFI and Flu
 
 ## Platform Support
 
-`ffr_crypto` compiles a native Rust library at build time via Flutter Native Assets. It works on all platforms where a Rust toolchain is available.
+`ffr_crypto` compiles a native Rust library at build time via Flutter Native Assets. The supported targets are listed below; each requires a compatible Rust toolchain.
 
 | Platform | Architectures | Supported |
 |----------|---------------|-----------|
@@ -94,6 +95,7 @@ rustup target add x86_64-pc-windows-msvc
 ## API Usage Examples
 
 ### 1. Cryptographically Secure Random Bytes
+
 ```dart
 import 'package:ffr_crypto/ffr_crypto.dart';
 
@@ -101,6 +103,7 @@ Uint8List bytes = await CryptoRandom.secureBytes(32);
 ```
 
 ### 2. Hashing (One-shot & Streaming)
+
 ```dart
 import 'package:ffr_crypto/ffr_crypto.dart';
 
@@ -115,6 +118,7 @@ Uint8List blake3Digest = await hasher.finalize(); // Context is automatically fr
 ```
 
 ### 3. Symmetric Encryption (AES-GCM)
+
 ```dart
 import 'package:ffr_crypto/ffr_crypto.dart';
 
@@ -134,6 +138,7 @@ Uint8List decrypted = await AesGcm.decrypt(
 ```
 
 ### 4. Asymmetric Cryptography (RSA-OAEP & RSA-PSS)
+
 ```dart
 import 'package:ffr_crypto/ffr_crypto.dart';
 
@@ -150,21 +155,30 @@ bool verified = await Rsa.verify(pair.publicKey, digest, sig);
 ```
 
 ### 5. Elliptic Curve Cryptography (ECC)
+
 ```dart
 import 'package:ffr_crypto/ffr_crypto.dart';
 
 // Ed25519 Sign/Verify
 final edPair = await Ed25519.generateKeyPair();
 final sig = await Ed25519.sign(privateKey: edPair.privateKey, message: msg);
-final isValid = await Ed25519.verify(publicKey: edPair.publicKey, message: msg, signature: sig);
+final isValid = await Ed25519.verify(
+  publicKey: edPair.publicKey,
+  message: msg,
+  signature: sig,
+);
 
 // X25519 Key Exchange
 final alice = await X25519.generateKeyPair();
 final bob = await X25519.generateKeyPair();
-final secretAlice = await X25519.computeSharedSecret(privateKey: alice.privateKey, peerPublicKey: bob.publicKey);
+final secretAlice = await X25519.computeSharedSecret(
+  privateKey: alice.privateKey,
+  peerPublicKey: bob.publicKey,
+);
 ```
 
 ### 6. Hybrid Encryption (ECIES)
+
 ```dart
 import 'package:ffr_crypto/ffr_crypto.dart';
 
@@ -182,6 +196,7 @@ Uint8List decrypted = await HybridEncryption.decrypt(
 ```
 
 ### 7. Safe Resource Management (Streaming)
+
 Since `CryptoHasher` retains a native pointer in Rust memory, you must ensure that memory is freed. Calling `finalize()` automatically releases the native resources, but if an error occurs beforehand, you must catch the error and free it manually:
 
 ```dart
@@ -191,17 +206,18 @@ final hasher = await CryptoHasher.create(HashAlgorithm.blake3);
 try {
   await hasher.update(chunk1);
   await hasher.update(chunk2);
-  
+
   // finalize() automatically cleans up native memory context
-  final digest = await hasher.finalize(); 
+  final digest = await hasher.finalize();
 } catch (e) {
   // Free native resource if hash finalize was never reached
-  hasher.free(); 
+  hasher.free();
   rethrow;
 }
 ```
 
 ### 8. Exception Handling
+
 All cryptographic and memory status boundaries throw specific exceptions subclassed from `CryptoException`:
 
 ```dart
@@ -213,10 +229,10 @@ try {
     ciphertext: manipulatedCiphertext,
     nonce: nonce,
   );
-} on DecryptionException catch (e) {
+} on DecryptionException {
   // Thrown if integrity check (AEAD tag) fails
   print('Decryption failed: Integrity check error.');
-} on InvalidKeyException catch (e) {
+} on InvalidKeyException {
   print('Decryption failed: Key is invalid.');
 } on CryptoException catch (e) {
   print('An unexpected cryptographic error occurred: ${e.message}');
@@ -243,7 +259,7 @@ Future<Uint8List> recoverCompatibilityPayload(
 
 This is payload recovery for compatibility protocols. It is not standard RSASSA-PKCS1-v1_5 verification and it does not decide what the recovered payload means. Standard RSASSA-PKCS1-v1_5 includes an ASN.1 `DigestInfo`; raw recovered payloads do not. Existing `Rsa.sign` and `Rsa.verify` remain RSA-PSS with SHA-256 digests.
 
-The public key may use SPKI (`PUBLIC KEY`) or PKCS#1 (`RSA PUBLIC KEY`) PEM encoding. The transformed block must be exactly the RSA modulus length. Invalid keys, lengths, representatives, padding, and payloads fail without exposing which recovery check rejected the input.
+The public key may use SPKI (`PUBLIC KEY`) or PKCS#1 (`RSA PUBLIC KEY`) PEM encoding. The transformed block must be exactly the RSA modulus length. Malformed keys throw `InvalidKeyException`; invalid block lengths, representatives, padding, and payloads throw `RsaRecoveryException` without exposing which recovery check rejected the input.
 
 `CryptoBytes` provides strict hexadecimal and canonical padded standard Base64 conversion. It rejects whitespace, prefixes, URL-safe Base64, implicit unpadded Base64, and noncanonical encodings. Equal-length `constantTimeEquals` calls Rust's `subtle` comparison; different public lengths return `false`. Input lengths are not secret, and correctness tests do not prove physical timing behavior.
 

@@ -27,7 +27,7 @@ final class _ErasedStage {
 /// An immutable typed pipeline representing one single-use execution.
 ///
 /// Appending a step creates a fresh independently runnable flow and does not
-/// consume this instance. Each individual flow instance may call [run] once.
+/// consume this instance. Each individual flow instance can be run once.
 final class CryptoFlow<Current> {
   final _FlowSource _source;
   final List<_ErasedStage> _stages;

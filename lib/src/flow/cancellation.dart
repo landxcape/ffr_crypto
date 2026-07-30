@@ -1,6 +1,9 @@
 part of '../../ffr_crypto_flow.dart';
 
 /// Mutable cooperative cancellation signal for one or more flow executions.
+///
+/// Cancellation is permanent for this token. Create a new token for unrelated
+/// work that must remain independently cancellable.
 final class CryptoCancellationToken {
   bool _isCancelled = false;
 

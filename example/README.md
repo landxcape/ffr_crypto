@@ -1,17 +1,26 @@
-# ffr_crypto_example
+# ffr_crypto example
 
-Demonstrates how to use the ffr_crypto package.
+A Flutter dashboard demonstrating the package's core high-level API.
 
-## Getting Started
+The example includes:
 
-This project is a starting point for a Flutter application.
+- Cryptographically secure random bytes.
+- SHA-256, SHA3-256, and BLAKE3 hashing.
+- RSA key generation and RSA-OAEP encryption/decryption.
+- Ed25519 key generation, signing, and verification.
 
-A few resources to get you started if this is your first Flutter project:
+Advanced primitives and typed workflows are documented in the package
+[README](../README.md); this application intentionally focuses on the stable
+`ffr_crypto.dart` entrypoint.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Run the example
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Install a Rust toolchain and the target required by your native platform, then
+run:
+
+```bash
+flutter pub get
+flutter run
+```
+
+Web is not supported because the package uses `dart:ffi`.
