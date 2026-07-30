@@ -1,9 +1,11 @@
 name: ffr_crypto
-description: "A Flutter-first, Rust-powered native cryptography package supporting RSA, AES-GCM, ChaCha20-Poly1305, SHA-2/3, BLAKE3, KDFs (Argon2), Ed25519, X25519, and ECIES."
-version: 0.0.4
+description: "A Flutter-first, Rust-powered cryptography package with native RSA, AEAD, hashing, KDF, ECC, compatibility primitives, and typed workflows."
+version: 0.0.5
 homepage: https://github.com/landxcape/ffr_crypto
 repository: https://github.com/landxcape/ffr_crypto
 issue_tracker: https://github.com/landxcape/ffr_crypto/issues
+false_secrets:
+  - /tool/interop/test_private_key.pem
 topics:
   - cryptography
   - security
