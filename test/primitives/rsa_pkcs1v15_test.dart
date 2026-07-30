@@ -83,6 +83,33 @@ void main() {
       throwsA(isA<RsaRecoveryException>()),
     );
   });
+
+  test(
+    'existing RSA-PSS verification accepts the fixed OpenSSL vector',
+    () async {
+      final pssFixture =
+          jsonDecode(
+                File(
+                  'test/fixtures/rsa_interop/openssl_pss_sha256.json',
+                ).readAsStringSync(),
+              )
+              as Map<String, Object?>;
+      final pssPublicKey = RsaPublicKey(pssFixture['publicKeyPem']! as String);
+      final digest = CryptoBytes.decodeHex(pssFixture['digestHex']! as String);
+      final signature = CryptoBytes.decodeHex(
+        pssFixture['signatureHex']! as String,
+      );
+
+      expect(await Rsa.verify(pssPublicKey, digest, signature), isTrue);
+
+      final modifiedDigest = Uint8List.fromList(digest);
+      modifiedDigest[0] ^= 0x01;
+      expect(
+        await Rsa.verify(pssPublicKey, modifiedDigest, signature),
+        isFalse,
+      );
+    },
+  );
 }
 
 Uint8List _decodeHex(String value) => Uint8List.fromList([
