@@ -1,0 +1,12 @@
+{
+  "generator": "node",
+  "operation": "RSA_PKCS1_PADDING privateEncrypt/publicDecrypt",
+  "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAumSYijNNIbdsZwF8fll9\nV4ZuLXZuykEECMDLhX9IT7S9pxJZ8UJpYycMOozczIDVuP0kgsI1X4bmjkMEoqzi\nmF2c+JAchsEEF3HFz/utn02pZFb3TTNrkBTkdeLb26Ald5zLraheYj5BhJO65TlS\nFdrW7iw8aQP1LXS2bJ8E0hOcqFaTIbdxYshU7ZnxLjLni97H8RSMDgSH4lLJT44m\nvC/XCAO3VaJzSLPK//H3whquWeT+WgmPVX6u4uuA7b6R07TeVWEg56cvD2mnDx1B\ngOb+zbzZvNA1s2iE4fxJQo0JV17FWX/n2A6njMn7hUjhHe2fon0gklv3EmgPZG5W\nfwIDAQAB\n-----END PUBLIC KEY-----\n",
+  "payloadHex": "00eaff1fb7367068ed6983b6183fbb182d7017241fe151c5a2c05c51b9caac74",
+  "transformedHex": "4fbc41c0600e8d2cdc9d591abd04dc62ad501d044dc5b7c9498e4aa909dc6e270556553bdb26a1c2fa1c18b8ec1cc9a1e62f109575ecc15fd189cdb297b894efce3420212e41abde24c3093dfda547f55f9659b3b5886379d04c8cdad7fa69624aea9143c585dc3c5e9a587ecb9493efd569ee7cfc2b94a5a41db96c94697b202046338b215d9d57fd8ef8fcfdc8bd25ee1e98799d1fa4dc0db98e95419b070ddc174c31e27a7148824f8fc358aa106c87c854f2f49929750f08744ded4482944cd73daa47549e6ba0a1d847331fc842773deb39f1853165a98eb3664b7498f68525655f34cc2a3ea68a494516b4e712257f7f3a583335fdc18bc7f349959069",
+  "expectedRecoveredHex": "00eaff1fb7367068ed6983b6183fbb182d7017241fe151c5a2c05c51b9caac74",
+  "messageUtf8": "ffr_crypto generic interoperability fixture",
+  "command": "node tool/interop/generate_node_public_recovery.mjs",
+  "nodeVersion": "v25.2.0",
+  "opensslVersion": "3.5.4"
+}

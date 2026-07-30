@@ -1,0 +1,15 @@
+{
+  "generator": "openssl",
+  "operation": "RSA-PSS SHA-256 with MGF1-SHA-256 and digest-sized salt",
+  "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAumSYijNNIbdsZwF8fll9\nV4ZuLXZuykEECMDLhX9IT7S9pxJZ8UJpYycMOozczIDVuP0kgsI1X4bmjkMEoqzi\nmF2c+JAchsEEF3HFz/utn02pZFb3TTNrkBTkdeLb26Ald5zLraheYj5BhJO65TlS\nFdrW7iw8aQP1LXS2bJ8E0hOcqFaTIbdxYshU7ZnxLjLni97H8RSMDgSH4lLJT44m\nvC/XCAO3VaJzSLPK//H3whquWeT+WgmPVX6u4uuA7b6R07TeVWEg56cvD2mnDx1B\ngOb+zbzZvNA1s2iE4fxJQo0JV17FWX/n2A6njMn7hUjhHe2fon0gklv3EmgPZG5W\nfwIDAQAB\n-----END PUBLIC KEY-----\n",
+  "messageUtf8": "ffr_crypto generic interoperability fixture",
+  "messageHex": "6666725f63727970746f2067656e6572696320696e7465726f7065726162696c6974792066697874757265",
+  "digestHex": "00eaff1fb7367068ed6983b6183fbb182d7017241fe151c5a2c05c51b9caac74",
+  "signatureHex": "00c4e08da0fe83ed1cb57f7ab186d1cb1f078e7762b728fecb81f2a23e315fb64c4a6afe4c21056929dd4172e1772da33939b1d9082e8cf132852ded12ec4e5b69d0865d3ec4a7d37a5fa229f755918882d709c1f93b7e63f3acf77d3dbf2b18fd7660f142981cd1ff18eaf4682d1b44c71278fa595da0b341da2d73ae0aa5120f7d234d3a2c8309b6b794195cd393522d4a557d3f315967b1ea2665b1f1220843c8d4e9080e7a0fbf16eb964e279e46f11c123ac79967bb3332375b2290f30024ead513426e71008914b828e9ddf31a3028e07c89e19c1996c663691789ab1872b95e688557e411cbd5e3021a6d1e3b52283ab932fcdc1b2c55e2bae74a3780",
+  "paddingMode": "pss",
+  "mgf1Hash": "sha256",
+  "saltLength": "digest",
+  "generatorCommand": "sh tool/interop/generate_openssl_pss.sh",
+  "signingCommand": "openssl dgst -sha256 -sign tool/interop/test_private_key.pem -sigopt rsa_padding_mode:pss -sigopt rsa_mgf1_md:sha256 -sigopt rsa_pss_saltlen:digest",
+  "opensslVersion": "OpenSSL 3.6.3 9 Jun 2026 (Library: OpenSSL 3.6.3 9 Jun 2026)"
+}
