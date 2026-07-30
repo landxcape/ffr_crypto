@@ -2,69 +2,11 @@ import 'dart:ffi' as ffi;
 import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
+import 'src/core/exceptions.dart';
 import 'src/ffr_crypto_bindings_generated.dart' as bindings;
+import 'src/native/status.dart';
 
-// --- Exceptions ---
-
-/// Base exception class for all cryptographic failures.
-abstract class CryptoException implements Exception {
-  final String message;
-  CryptoException(this.message);
-
-  @override
-  String toString() => '$runtimeType: $message';
-}
-
-class GenericCryptoException extends CryptoException {
-  GenericCryptoException(super.message);
-}
-
-class InvalidKeyException extends CryptoException {
-  InvalidKeyException(super.message);
-}
-
-class EncryptionException extends CryptoException {
-  EncryptionException(super.message);
-}
-
-class DecryptionException extends CryptoException {
-  DecryptionException(super.message);
-}
-
-class SigningException extends CryptoException {
-  SigningException(super.message);
-}
-
-class VerificationException extends CryptoException {
-  VerificationException(super.message);
-}
-
-class InvalidInputException extends CryptoException {
-  InvalidInputException(super.message);
-}
-
-void _checkStatus(int code, String action) {
-  switch (code) {
-    case 0:
-      return;
-    case 1:
-      throw GenericCryptoException('$action failed (Generic Error)');
-    case 2:
-      throw InvalidKeyException('$action failed: Invalid key format/type');
-    case 3:
-      throw EncryptionException('$action failed');
-    case 4:
-      throw DecryptionException('$action failed');
-    case 5:
-      throw SigningException('$action failed');
-    case 6:
-      throw VerificationException('$action verification failed');
-    case 7:
-      throw InvalidInputException('$action failed: Invalid input arguments');
-    default:
-      throw GenericCryptoException('$action failed with unknown code: $code');
-  }
-}
+export 'src/core/exceptions.dart';
 
 // --- CSPRNG Random ---
 
@@ -80,7 +22,7 @@ class CryptoRandom {
       final ptr = calloc<ffi.UnsignedChar>(length);
       try {
         final status = bindings.ffr_crypto_random_bytes(ptr, length);
-        _checkStatus(status, 'Random generation');
+        checkStatus(status, 'Random generation');
         return Uint8List.fromList(ptr.cast<ffi.Uint8>().asTypedList(length));
       } finally {
         calloc.free(ptr);
@@ -127,7 +69,7 @@ class RsaKeyPair {
           pubPemPtr,
           privPemPtr,
         );
-        _checkStatus(status, 'RSA key generation');
+        checkStatus(status, 'RSA key generation');
 
         final pubStr = pubPemPtr.value.cast<Utf8>().toDartString();
         final privStr = privPemPtr.value.cast<Utf8>().toDartString();
@@ -175,7 +117,7 @@ class Rsa {
           outCiphertextPtr,
           outLenPtr,
         );
-        _checkStatus(status, 'RSA encryption');
+        checkStatus(status, 'RSA encryption');
 
         final resultLen = outLenPtr.value;
         final resultPtr = outCiphertextPtr.value;
@@ -220,7 +162,7 @@ class Rsa {
           outPlaintextPtr,
           outLenPtr,
         );
-        _checkStatus(status, 'RSA decryption');
+        checkStatus(status, 'RSA decryption');
 
         final resultLen = outLenPtr.value;
         final resultPtr = outPlaintextPtr.value;
@@ -262,7 +204,7 @@ class Rsa {
           outSigPtr,
           outSigLenPtr,
         );
-        _checkStatus(status, 'RSA signing');
+        checkStatus(status, 'RSA signing');
 
         final resultLen = outSigLenPtr.value;
         final resultPtr = outSigPtr.value;
@@ -312,7 +254,7 @@ class Rsa {
         if (status == 0) return true;
         if (status == 6) return false;
 
-        _checkStatus(status, 'RSA verification');
+        checkStatus(status, 'RSA verification');
         return false;
       } finally {
         calloc.free(pubKeyPtr);
@@ -339,7 +281,7 @@ class CryptoHasher {
       final outPtr = calloc<ffi.Pointer<bindings.HasherContext>>();
       try {
         final status = bindings.ffr_crypto_hasher_new(algorithm.index, outPtr);
-        _checkStatus(status, 'Hasher initialization');
+        checkStatus(status, 'Hasher initialization');
         return outPtr.value.address;
       } finally {
         calloc.free(outPtr);
@@ -366,7 +308,7 @@ class CryptoHasher {
           dataPtr,
           data.length,
         );
-        _checkStatus(status, 'Hasher update');
+        checkStatus(status, 'Hasher update');
       } finally {
         calloc.free(dataPtr);
       }
@@ -393,7 +335,7 @@ class CryptoHasher {
           outDigestPtr,
           outLenPtr,
         );
-        _checkStatus(status, 'Hasher finalization');
+        checkStatus(status, 'Hasher finalization');
 
         final resultLen = outLenPtr.value;
         final resultPtr = outDigestPtr.value;
@@ -513,7 +455,7 @@ class AesGcm {
           outCiphertextPtr,
           outLenPtr,
         );
-        _checkStatus(status, 'AES-GCM encryption');
+        checkStatus(status, 'AES-GCM encryption');
 
         final resultLen = outLenPtr.value;
         final resultPtr = outCiphertextPtr.value;
@@ -589,7 +531,7 @@ class AesGcm {
           outPlaintextPtr,
           outLenPtr,
         );
-        _checkStatus(status, 'AES-GCM decryption');
+        checkStatus(status, 'AES-GCM decryption');
 
         final resultLen = outLenPtr.value;
         final resultPtr = outPlaintextPtr.value;
@@ -666,7 +608,7 @@ class ChaCha20Poly1305 {
           outCiphertextPtr,
           outLenPtr,
         );
-        _checkStatus(status, 'ChaCha20-Poly1305 encryption');
+        checkStatus(status, 'ChaCha20-Poly1305 encryption');
 
         final resultLen = outLenPtr.value;
         final resultPtr = outCiphertextPtr.value;
@@ -741,7 +683,7 @@ class ChaCha20Poly1305 {
           outPlaintextPtr,
           outLenPtr,
         );
-        _checkStatus(status, 'ChaCha20-Poly1305 decryption');
+        checkStatus(status, 'ChaCha20-Poly1305 decryption');
 
         final resultLen = outLenPtr.value;
         final resultPtr = outPlaintextPtr.value;
@@ -803,7 +745,7 @@ class Pbkdf2 {
           outKeyPtr,
           keyLength,
         );
-        _checkStatus(status, 'PBKDF2 key derivation');
+        checkStatus(status, 'PBKDF2 key derivation');
         return Uint8List.fromList(
           outKeyPtr.cast<ffi.Uint8>().asTypedList(keyLength),
         );
@@ -862,7 +804,7 @@ class Hkdf {
           outKeyPtr,
           keyLength,
         );
-        _checkStatus(status, 'HKDF key derivation');
+        checkStatus(status, 'HKDF key derivation');
         return Uint8List.fromList(
           outKeyPtr.cast<ffi.Uint8>().asTypedList(keyLength),
         );
@@ -920,7 +862,7 @@ class Argon2 {
           outKeyPtr,
           keyLength,
         );
-        _checkStatus(status, 'Argon2 key derivation');
+        checkStatus(status, 'Argon2 key derivation');
         return Uint8List.fromList(
           outKeyPtr.cast<ffi.Uint8>().asTypedList(keyLength),
         );
@@ -951,7 +893,7 @@ class Ed25519 {
           pubPtr,
           privPtr,
         );
-        _checkStatus(status, 'Ed25519 key generation');
+        checkStatus(status, 'Ed25519 key generation');
 
         final pubBytes = Uint8List.fromList(
           pubPtr.cast<ffi.Uint8>().asTypedList(32),
@@ -991,7 +933,7 @@ class Ed25519 {
           message.length,
           sigPtr,
         );
-        _checkStatus(status, 'Ed25519 signing');
+        checkStatus(status, 'Ed25519 signing');
         return Uint8List.fromList(sigPtr.cast<ffi.Uint8>().asTypedList(64));
       } finally {
         calloc.free(privPtr);
@@ -1032,7 +974,7 @@ class Ed25519 {
         );
         if (status == 0) return true;
         if (status == 6) return false;
-        _checkStatus(status, 'Ed25519 verification');
+        checkStatus(status, 'Ed25519 verification');
         return false;
       } finally {
         calloc.free(pubPtr);
@@ -1059,7 +1001,7 @@ class X25519 {
           pubPtr,
           privPtr,
         );
-        _checkStatus(status, 'X25519 key generation');
+        checkStatus(status, 'X25519 key generation');
 
         final pubBytes = Uint8List.fromList(
           pubPtr.cast<ffi.Uint8>().asTypedList(32),
@@ -1101,7 +1043,7 @@ class X25519 {
           pubPtr,
           secretPtr,
         );
-        _checkStatus(status, 'X25519 secret agreement');
+        checkStatus(status, 'X25519 secret agreement');
         return Uint8List.fromList(secretPtr.cast<ffi.Uint8>().asTypedList(32));
       } finally {
         calloc.free(privPtr);
