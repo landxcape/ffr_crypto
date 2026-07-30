@@ -1,0 +1,5 @@
+import 'package:ffr_crypto/ffr_crypto_flow.dart';
+
+void main() {
+  CryptoFlow.fromHex('00').then(EncodingSteps.hexDecode());
+}
