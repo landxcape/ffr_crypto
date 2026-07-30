@@ -14,6 +14,7 @@ final class CryptoFlowException extends CryptoException {
   /// Original stack trace captured with [cause].
   final StackTrace causeStackTrace;
 
+  /// Creates a contextual wrapper around an original source or step failure.
   CryptoFlowException({
     required this.stepName,
     required this.stepIndex,
@@ -24,10 +25,12 @@ final class CryptoFlowException extends CryptoException {
 
 /// Thrown when a single-use flow is run more than once.
 final class CryptoFlowStateException extends CryptoException {
+  /// Creates a flow lifecycle failure.
   CryptoFlowStateException(super.message);
 }
 
 /// Thrown when cooperative flow cancellation is observed at a boundary.
 final class CryptoFlowCancelledException extends CryptoException {
+  /// Creates the stable cooperative-cancellation failure.
   CryptoFlowCancelledException() : super('Crypto flow was cancelled');
 }
