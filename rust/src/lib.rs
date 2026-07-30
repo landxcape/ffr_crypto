@@ -1,3 +1,8 @@
+mod buffer;
+mod status;
+
+use crate::buffer::write_output;
+use crate::status::*;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use rsa::pkcs8::{
@@ -7,42 +12,6 @@ use rsa::{Oaep, Pss, RsaPrivateKey, RsaPublicKey};
 use sha2::{Sha256, Sha512};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-
-// --- Error Codes ---
-pub const SUCCESS: i32 = 0;
-pub const ERROR_GENERIC: i32 = 1;
-pub const ERROR_INVALID_KEY: i32 = 2;
-pub const ERROR_ENCRYPTION_FAILED: i32 = 3;
-pub const ERROR_DECRYPTION_FAILED: i32 = 4;
-pub const ERROR_SIGNING_FAILED: i32 = 5;
-pub const ERROR_VERIFICATION_FAILED: i32 = 6;
-pub const ERROR_INVALID_INPUT: i32 = 7;
-
-// --- Helper macros/functions for memory management ---
-
-/// Releases a string allocated by this library.
-///
-/// # Safety
-/// `ptr` must be null or a live pointer returned by this library from
-/// `CString::into_raw`, and it must not have been released previously.
-#[no_mangle]
-pub unsafe extern "C" fn ffr_crypto_free_string(ptr: *mut c_char) {
-    if !ptr.is_null() {
-        let _ = CString::from_raw(ptr);
-    }
-}
-
-/// Releases a byte buffer allocated by this library.
-///
-/// # Safety
-/// `ptr` must be null or a live byte buffer returned by this library, `len`
-/// must be its exact length, and the buffer must not have been released before.
-#[no_mangle]
-pub unsafe extern "C" fn ffr_crypto_free_bytes(ptr: *mut u8, len: usize) {
-    if !ptr.is_null() {
-        let _ = Vec::from_raw_parts(ptr, len, len);
-    }
-}
 
 // --- Cryptographically Secure Pseudo-Random Number Generator (CSPRNG) ---
 
@@ -158,14 +127,7 @@ pub unsafe extern "C" fn ffr_crypto_rsa_encrypt(
     let padding = Oaep::new::<Sha256>();
 
     match public_key.encrypt(&mut rng, padding, plain_slice) {
-        Ok(encrypted) => {
-            let len = encrypted.len();
-            let mut vec_boxed = encrypted.into_boxed_slice();
-            *out_ciphertext = vec_boxed.as_mut_ptr();
-            *out_len = len;
-            std::mem::forget(vec_boxed);
-            SUCCESS
-        }
+        Ok(encrypted) => write_output(encrypted, out_ciphertext, out_len),
         Err(_) => ERROR_ENCRYPTION_FAILED,
     }
 }
@@ -209,14 +171,7 @@ pub unsafe extern "C" fn ffr_crypto_rsa_decrypt(
     let padding = Oaep::new::<Sha256>();
 
     match private_key.decrypt(padding, cipher_slice) {
-        Ok(decrypted) => {
-            let len = decrypted.len();
-            let mut vec_boxed = decrypted.into_boxed_slice();
-            *out_plaintext = vec_boxed.as_mut_ptr();
-            *out_len = len;
-            std::mem::forget(vec_boxed);
-            SUCCESS
-        }
+        Ok(decrypted) => write_output(decrypted, out_plaintext, out_len),
         Err(_) => ERROR_DECRYPTION_FAILED,
     }
 }
@@ -257,14 +212,7 @@ pub unsafe extern "C" fn ffr_crypto_rsa_sign(
     let padding = Pss::new::<Sha256>();
 
     match private_key.sign_with_rng(&mut rng, padding, digest_slice) {
-        Ok(signature) => {
-            let len = signature.len();
-            let mut vec_boxed = signature.into_boxed_slice();
-            *out_sig = vec_boxed.as_mut_ptr();
-            *out_sig_len = len;
-            std::mem::forget(vec_boxed);
-            SUCCESS
-        }
+        Ok(signature) => write_output(signature, out_sig, out_sig_len),
         Err(_) => ERROR_SIGNING_FAILED,
     }
 }
@@ -400,12 +348,7 @@ pub unsafe extern "C" fn ffr_crypto_hasher_finalize(
         HasherContext::Blake3(h) => h.finalize().as_bytes().to_vec(),
     };
 
-    let len = digest.len();
-    let mut vec_boxed = digest.into_boxed_slice();
-    *out_digest = vec_boxed.as_mut_ptr();
-    *out_len = len;
-    std::mem::forget(vec_boxed);
-    SUCCESS
+    write_output(digest, out_digest, out_len)
 }
 
 /// Releases an opaque streaming hash context without finalizing it.
@@ -493,14 +436,7 @@ pub unsafe extern "C" fn ffr_crypto_aes_gcm_encrypt(
     };
 
     match result {
-        Ok(ciphertext) => {
-            let len = ciphertext.len();
-            let mut vec_boxed = ciphertext.into_boxed_slice();
-            *out_ciphertext = vec_boxed.as_mut_ptr();
-            *out_len = len;
-            std::mem::forget(vec_boxed);
-            SUCCESS
-        }
+        Ok(ciphertext) => write_output(ciphertext, out_ciphertext, out_len),
         Err(_) => ERROR_ENCRYPTION_FAILED,
     }
 }
@@ -571,14 +507,7 @@ pub unsafe extern "C" fn ffr_crypto_aes_gcm_decrypt(
     };
 
     match result {
-        Ok(plaintext) => {
-            let len = plaintext.len();
-            let mut vec_boxed = plaintext.into_boxed_slice();
-            *out_plaintext = vec_boxed.as_mut_ptr();
-            *out_len = len;
-            std::mem::forget(vec_boxed);
-            SUCCESS
-        }
+        Ok(plaintext) => write_output(plaintext, out_plaintext, out_len),
         Err(_) => ERROR_DECRYPTION_FAILED,
     }
 }
@@ -636,14 +565,7 @@ pub unsafe extern "C" fn ffr_crypto_chacha20_poly1305_encrypt(
     };
 
     match cipher.encrypt(nonce_ga, payload) {
-        Ok(ciphertext) => {
-            let len = ciphertext.len();
-            let mut vec_boxed = ciphertext.into_boxed_slice();
-            *out_ciphertext = vec_boxed.as_mut_ptr();
-            *out_len = len;
-            std::mem::forget(vec_boxed);
-            SUCCESS
-        }
+        Ok(ciphertext) => write_output(ciphertext, out_ciphertext, out_len),
         Err(_) => ERROR_ENCRYPTION_FAILED,
     }
 }
@@ -701,14 +623,7 @@ pub unsafe extern "C" fn ffr_crypto_chacha20_poly1305_decrypt(
     };
 
     match cipher.decrypt(nonce_ga, payload) {
-        Ok(plaintext) => {
-            let len = plaintext.len();
-            let mut vec_boxed = plaintext.into_boxed_slice();
-            *out_plaintext = vec_boxed.as_mut_ptr();
-            *out_len = len;
-            std::mem::forget(vec_boxed);
-            SUCCESS
-        }
+        Ok(plaintext) => write_output(plaintext, out_plaintext, out_len),
         Err(_) => ERROR_DECRYPTION_FAILED,
     }
 }
