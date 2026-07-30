@@ -56,7 +56,7 @@ final class CryptoFlow<Current> {
 
   /// Creates a lazy UTF-8 source.
   static CryptoFlow<Uint8List> fromUtf8(String value) => CryptoFlow._(
-    _FlowSource('source.utf8', () => Uint8List.fromList(utf8.encode(value))),
+    _FlowSource('source.utf8', () => _strictUtf8Encode(value)),
     const [],
   );
 
@@ -106,6 +106,30 @@ final class CryptoFlow<Current> {
       await cleanup.releaseAll();
     }
   }
+}
+
+Uint8List _strictUtf8Encode(String value) {
+  final codeUnits = value.codeUnits;
+  for (var index = 0; index < codeUnits.length; index++) {
+    final codeUnit = codeUnits[index];
+    final isHighSurrogate = codeUnit >= 0xd800 && codeUnit <= 0xdbff;
+    final isLowSurrogate = codeUnit >= 0xdc00 && codeUnit <= 0xdfff;
+
+    if (isHighSurrogate) {
+      final hasLowSurrogate =
+          index + 1 < codeUnits.length &&
+          codeUnits[index + 1] >= 0xdc00 &&
+          codeUnits[index + 1] <= 0xdfff;
+      if (!hasLowSurrogate) {
+        throw InvalidInputException('Invalid UTF-16 surrogate sequence');
+      }
+      index++;
+    } else if (isLowSurrogate) {
+      throw InvalidInputException('Invalid UTF-16 surrogate sequence');
+    }
+  }
+
+  return Uint8List.fromList(utf8.encode(value));
 }
 
 Future<Object?> _invokeFlowStage(
