@@ -15,6 +15,8 @@ A Flutter-first, Rust-powered native cryptography package using Dart FFI and Flu
 - **Key Derivation (KDF):** PBKDF2-HMAC-SHA-256, HKDF-SHA-256, and Argon2 (id, i, d).
 - **Elliptic Curve Cryptography (ECC):** Ed25519 signatures and X25519 Diffie-Hellman key exchange.
 - **Hybrid Encryption (ECIES):** Composed hybrid encryption using X25519, HKDF-SHA-256, and ChaCha20-Poly1305.
+- **Advanced Compatibility Primitives:** Strict byte utilities and validated RSA PKCS#1 v1.5 block-type-1 public recovery.
+- **Typed Workflows:** Optional immutable, single-use pipelines with analyzer-checked step types, explicit custom boundaries, cancellation, and contextual errors.
 
 ## Performance & Design
 - **Off-Thread Processing:** All computationally expensive operations (RSA, KDFs, Hybrid, Signatures) run asynchronously on background Dart Isolates (`Isolate.run`), preventing UI frames from dropping.
@@ -44,9 +46,24 @@ Add the package dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-dependencies:
-  ffr_crypto: ^0.0.3
+  ffr_crypto: ^0.0.4
 ```
+
+### Choose explicit package layers
+
+`ffr_crypto` has three isolated entrypoints. Import every layer your code uses:
+
+```dart
+import 'package:ffr_crypto/ffr_crypto.dart';
+import 'package:ffr_crypto/ffr_crypto_primitives.dart';
+import 'package:ffr_crypto/ffr_crypto_flow.dart';
+```
+
+- `ffr_crypto.dart` contains the existing safe, high-level API. Existing users do not need to change imports or call sites.
+- `ffr_crypto_primitives.dart` contains advanced direct primitives and strict byte utilities. It does not re-export the core library.
+- `ffr_crypto_flow.dart` contains flow lifecycle, sources, steps, cancellation, and flow errors. It does not re-export either other layer.
+
+Importing multiple entrypoints does not duplicate native assets, types, or runtime work.
 
 ### Prerequisites — Rust Toolchain
 
@@ -205,3 +222,57 @@ try {
   print('An unexpected cryptographic error occurred: ${e.message}');
 }
 ```
+
+## Advanced Compatibility Primitives
+
+`RsaPkcs1v15.publicRecover` applies the RSA public operation, validates the complete PKCS#1 v1.5 block-type-1 encoding, and returns only its non-empty payload:
+
+```dart
+import 'dart:typed_data';
+
+import 'package:ffr_crypto/ffr_crypto.dart';
+import 'package:ffr_crypto/ffr_crypto_primitives.dart';
+
+Future<Uint8List> recoverCompatibilityPayload(
+  RsaPublicKey publicKey,
+  Uint8List transformedBlock,
+) {
+  return RsaPkcs1v15.publicRecover(publicKey, transformedBlock);
+}
+```
+
+This is payload recovery for compatibility protocols. It is not standard RSASSA-PKCS1-v1_5 verification and it does not decide what the recovered payload means. Standard RSASSA-PKCS1-v1_5 includes an ASN.1 `DigestInfo`; raw recovered payloads do not. Existing `Rsa.sign` and `Rsa.verify` remain RSA-PSS with SHA-256 digests.
+
+`CryptoBytes` provides strict hexadecimal and canonical padded standard Base64 conversion. It rejects whitespace, prefixes, URL-safe Base64, implicit unpadded Base64, and noncanonical encodings. Equal-length `constantTimeEquals` calls Rust's `subtle` comparison; different public lengths return `false`. Input lengths are not secret, and correctness tests do not prove physical timing behavior.
+
+## Typed Crypto Flows
+
+Flows make linear byte transformations explicit while leaving direct APIs available:
+
+```dart
+import 'dart:typed_data';
+
+import 'package:ffr_crypto/ffr_crypto.dart';
+import 'package:ffr_crypto/ffr_crypto_flow.dart';
+
+Future<bool> validateRecoveredPayload({
+  required RsaPublicKey publicKey,
+  required String transformedHex,
+  required Uint8List expectedPayload,
+}) {
+  return CryptoFlow.fromHex(transformedHex)
+      .then(RsaSteps.pkcs1v15PublicRecover(publicKey))
+      .then(ByteSteps.constantTimeEquals(expectedPayload))
+      .run();
+}
+```
+
+Adjacent step types are checked by the Dart analyzer. Step definitions are immutable and reusable, but each `CryptoFlow` object runs exactly once. Calling `then` or `thenCustom` creates a fresh independently runnable flow without consuming the original.
+
+`thenCustom` is the explicit caller-controlled boundary. Its callback may be synchronous or asynchronous and may call Dart, FFI, platform channels, or another package. `ffr_crypto` guarantees ordering, type progression, step-context errors, cancellation checks before and after the callback, and cleanup of resources owned by the flow. It cannot guarantee the callback's security, constant-time behavior, memory wiping, internal cancellation, native execution, batching, or cleanup of resources the callback owns.
+
+Cancellation is cooperative through `CryptoCancellationToken`. The flow checks before and after its source and every step. Active Rust work or a custom callback is allowed to finish and clean up; its result is then discarded and no later step starts. The package does not terminate isolates during native execution.
+
+Flow failures use `CryptoFlowException`, preserving the failing step name, zero-based index, original cause, and original stack trace. Lifecycle errors and cancellation use `CryptoFlowStateException` and `CryptoFlowCancelledException` separately. Exception messages do not include keys or intermediate values.
+
+Rust allocations are copied into Dart-owned bytes and released before a built-in operation returns. Ordinary Dart `Uint8List` memory is garbage-collected, so the package does not claim it can always be wiped. Custom callbacks own any external resources they allocate.

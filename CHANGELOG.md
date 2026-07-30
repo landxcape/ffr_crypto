@@ -1,3 +1,13 @@
+## Unreleased
+
+- Add isolated advanced-primitives and typed-flow entrypoints without changing existing imports or APIs.
+- Add validated RSA PKCS#1 v1.5 block-type-1 public recovery for compatibility protocols.
+- Add strict hexadecimal, canonical standard Base64, and Rust-backed constant-time byte comparison utilities.
+- Add immutable typed single-use flows, built-in recovery/hash/encoding/comparison steps, explicit custom callbacks, cooperative cancellation, and contextual flow errors.
+- Add fixed Node and OpenSSL RSA interoperability fixtures with reproducible generators.
+
+---
+
 ## 0.0.4
 
 - Fix leftover class name references (`CryptoRandom`, `CryptoHash`, `CryptoHasher`) in the README.md usage examples.

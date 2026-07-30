@@ -10,6 +10,40 @@ external void ffr_crypto_free_string(ffi.Pointer<ffi.Char> ptr);
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Size)>()
 external void ffr_crypto_free_bytes(ffi.Pointer<ffi.UnsignedChar> ptr, int len);
 
+@ffi.Native<
+  ffi.Int Function(
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Size,
+    ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>>,
+    ffi.Pointer<ffi.Size>,
+  )
+>()
+external int ffr_crypto_rsa_pkcs1v15_public_recover(
+  ffi.Pointer<ffi.Char> public_key_pem,
+  ffi.Pointer<ffi.UnsignedChar> input,
+  int input_len,
+  ffi.Pointer<ffi.Pointer<ffi.UnsignedChar>> out_payload,
+  ffi.Pointer<ffi.Size> out_len,
+);
+
+@ffi.Native<
+  ffi.Int Function(
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Size,
+    ffi.Pointer<ffi.UnsignedChar>,
+    ffi.Size,
+    ffi.Pointer<ffi.UnsignedChar>,
+  )
+>()
+external int ffr_crypto_constant_time_equals(
+  ffi.Pointer<ffi.UnsignedChar> left,
+  int left_len,
+  ffi.Pointer<ffi.UnsignedChar> right,
+  int right_len,
+  ffi.Pointer<ffi.UnsignedChar> out_equal,
+);
+
 @ffi.Native<ffi.Int Function(ffi.Pointer<ffi.UnsignedChar>, ffi.Size)>()
 external int ffr_crypto_random_bytes(
   ffi.Pointer<ffi.UnsignedChar> buf,

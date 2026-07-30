@@ -11,8 +11,14 @@ void main() {
     });
 
     test('secureBytes throws on invalid length', () async {
-      expect(() => CryptoRandom.secureBytes(-1), throwsA(isA<CryptoException>()));
-      expect(() => CryptoRandom.secureBytes(0), throwsA(isA<CryptoException>()));
+      expect(
+        () => CryptoRandom.secureBytes(-1),
+        throwsA(isA<CryptoException>()),
+      );
+      expect(
+        () => CryptoRandom.secureBytes(0),
+        throwsA(isA<CryptoException>()),
+      );
     });
   });
 
@@ -135,7 +141,10 @@ void main() {
       await hasher.update(chunk2);
       final streamingDigest = await hasher.finalize();
 
-      final oneshotDigest = await CryptoHash.hash(HashAlgorithm.sha256, fullData);
+      final oneshotDigest = await CryptoHash.hash(
+        HashAlgorithm.sha256,
+        fullData,
+      );
 
       expect(streamingDigest, oneshotDigest);
     });
@@ -149,8 +158,14 @@ void main() {
       final fullData = Uint8List.fromList(chunks.expand((x) => x).toList());
 
       final stream = Stream.fromIterable(chunks);
-      final streamDigest = await CryptoHash.hashStream(HashAlgorithm.sha256, stream);
-      final oneshotDigest = await CryptoHash.hash(HashAlgorithm.sha256, fullData);
+      final streamDigest = await CryptoHash.hashStream(
+        HashAlgorithm.sha256,
+        stream,
+      );
+      final oneshotDigest = await CryptoHash.hash(
+        HashAlgorithm.sha256,
+        fullData,
+      );
 
       expect(streamDigest, oneshotDigest);
     });
