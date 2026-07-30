@@ -26,3 +26,8 @@ final class CryptoFlowException extends CryptoException {
 final class CryptoFlowStateException extends CryptoException {
   CryptoFlowStateException(super.message);
 }
+
+/// Thrown when cooperative flow cancellation is observed at a boundary.
+final class CryptoFlowCancelledException extends CryptoException {
+  CryptoFlowCancelledException() : super('Crypto flow was cancelled');
+}

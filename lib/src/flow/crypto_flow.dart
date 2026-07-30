@@ -79,22 +79,27 @@ final class CryptoFlow<Current> {
   }
 
   /// Executes this flow exactly once and returns its final typed value.
-  Future<Current> run() async {
+  Future<Current> run({CryptoCancellationToken? cancellationToken}) async {
     if (_hasRun) {
       throw CryptoFlowStateException('A crypto flow can only be run once');
     }
     _hasRun = true;
 
+    final token = cancellationToken ?? CryptoCancellationToken();
     final cleanup = _CleanupStack();
     try {
+      token._throwIfCancelled();
       var current = await _invokeFlowStage(_source.name, 0, _source.operation);
+      token._throwIfCancelled();
       for (var index = 0; index < _stages.length; index++) {
         final stage = _stages[index];
+        token._throwIfCancelled();
         current = await _invokeFlowStage(
           stage.name,
           index + 1,
           () => stage.execute(current),
         );
+        token._throwIfCancelled();
       }
       return current as Current;
     } finally {
@@ -110,6 +115,8 @@ Future<Object?> _invokeFlowStage(
 ) async {
   try {
     return await operation();
+  } on CryptoFlowCancelledException {
+    rethrow;
   } on CryptoFlowException catch (error, stackTrace) {
     Error.throwWithStackTrace(error, stackTrace);
   } catch (error, stackTrace) {
