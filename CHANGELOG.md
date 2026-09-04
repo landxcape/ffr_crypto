@@ -1,3 +1,11 @@
+## 0.0.7
+
+- Upgrade `ffigen` to 21.0.0 and regenerate native FFI bindings.
+- Update Rust backend crate dependencies (`blake3`, `libc`, `rand`, `zerocopy`, etc.).
+- Update Flutter and Dart package dependencies to their latest compatible versions.
+
+---
+
 ## 0.0.6
 
 - Fix native library loading failure on 32-bit ARM Android devices (`armeabi-v7a` / `armv7-linux-androideabi`) caused by missing `_Unwind_Resume` symbol.
