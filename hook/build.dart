@@ -67,10 +67,20 @@ void main(List<String> args) async {
       cargoArgs.addAll(['--target', cargoTarget]);
     }
 
+    Map<String, String>? environment;
+    if (targetOS == OS.android && cargoTarget != null) {
+      environment = _resolveAndroidEnvironment(
+        input: input,
+        targetArch: targetArch,
+        cargoTarget: cargoTarget,
+      );
+    }
+
     final result = await Process.run(
       'cargo',
       cargoArgs,
       workingDirectory: rustDir.path,
+      environment: environment,
     );
 
     if (result.exitCode != 0) {
@@ -127,4 +137,124 @@ void main(List<String> args) async {
     rustDependencies.add(rustDir.uri.resolve('Cargo.toml'));
     output.dependencies.addAll(rustDependencies);
   });
+}
+
+Map<String, String> _resolveAndroidEnvironment({
+  required BuildInput input,
+  required Architecture targetArch,
+  required String cargoTarget,
+}) {
+  final env = Map<String, String>.from(Platform.environment);
+
+  int apiLevel = 21;
+  try {
+    apiLevel = input.config.code.android.targetNdkApi;
+  } catch (_) {
+    // Default to API 21 if unavailable
+  }
+
+  Directory? llvmBinDir;
+
+  final cCompiler = input.config.code.cCompiler;
+  if (cCompiler != null) {
+    final compilerFile = File.fromUri(cCompiler.compiler);
+    if (compilerFile.existsSync()) {
+      llvmBinDir = compilerFile.parent;
+    }
+  }
+
+  if (llvmBinDir == null || !llvmBinDir.existsSync()) {
+    final possibleNdkRoots = <String>[
+      if (Platform.environment['ANDROID_NDK_HOME'] != null)
+        Platform.environment['ANDROID_NDK_HOME']!,
+      if (Platform.environment['ANDROID_NDK_ROOT'] != null)
+        Platform.environment['ANDROID_NDK_ROOT']!,
+      if (Platform.environment['NDK_HOME'] != null)
+        Platform.environment['NDK_HOME']!,
+      if (Platform.environment['ANDROID_HOME'] != null)
+        '${Platform.environment['ANDROID_HOME']}/ndk',
+      if (Platform.isMacOS && Platform.environment['HOME'] != null)
+        '${Platform.environment['HOME']}/Library/Android/sdk/ndk',
+      if (Platform.isLinux && Platform.environment['HOME'] != null)
+        '${Platform.environment['HOME']}/Android/Sdk/ndk',
+      if (Platform.isWindows && Platform.environment['LOCALAPPDATA'] != null)
+        '${Platform.environment['LOCALAPPDATA']}/Android/Sdk/ndk',
+    ];
+
+    for (final ndkRootPath in possibleNdkRoots) {
+      final ndkRootDir = Directory(ndkRootPath);
+      if (!ndkRootDir.existsSync()) continue;
+
+      final ndkDirs = <Directory>[];
+      if (File('${ndkRootDir.path}/source.properties').existsSync()) {
+        ndkDirs.add(ndkRootDir);
+      } else {
+        try {
+          final entries = ndkRootDir.listSync().whereType<Directory>().toList();
+          entries.sort((a, b) => b.path.compareTo(a.path));
+          ndkDirs.addAll(entries);
+        } catch (_) {}
+      }
+
+      for (final ndkDir in ndkDirs) {
+        final prebuiltDir = Directory('${ndkDir.path}/toolchains/llvm/prebuilt');
+        if (prebuiltDir.existsSync()) {
+          for (final hostDir in prebuiltDir.listSync().whereType<Directory>()) {
+            final binDir = Directory('${hostDir.path}/bin');
+            if (binDir.existsSync()) {
+              llvmBinDir = binDir;
+              break;
+            }
+          }
+        }
+        if (llvmBinDir != null) break;
+      }
+      if (llvmBinDir != null) break;
+    }
+  }
+
+  if (llvmBinDir != null && llvmBinDir.existsSync()) {
+    final isWindows = Platform.isWindows ? '.cmd' : '';
+    String clangName;
+    if (targetArch == Architecture.arm) {
+      clangName = 'armv7a-linux-androideabi$apiLevel-clang$isWindows';
+    } else if (targetArch == Architecture.arm64) {
+      clangName = 'aarch64-linux-android$apiLevel-clang$isWindows';
+    } else if (targetArch == Architecture.ia32) {
+      clangName = 'i686-linux-android$apiLevel-clang$isWindows';
+    } else if (targetArch == Architecture.x64) {
+      clangName = 'x86_64-linux-android$apiLevel-clang$isWindows';
+    } else {
+      clangName = 'clang$isWindows';
+    }
+
+    final linkerFile = File('${llvmBinDir.path}/$clangName');
+    final arName = Platform.isWindows ? 'llvm-ar.exe' : 'llvm-ar';
+    final arFile = File('${llvmBinDir.path}/$arName');
+
+    final targetEnvKey = cargoTarget.toUpperCase().replaceAll('-', '_');
+
+    if (linkerFile.existsSync()) {
+      env['CARGO_TARGET_${targetEnvKey}_LINKER'] = linkerFile.path;
+      env['CC_$cargoTarget'] = linkerFile.path;
+    }
+    if (arFile.existsSync()) {
+      env['CARGO_TARGET_${targetEnvKey}_AR'] = arFile.path;
+      env['AR_$cargoTarget'] = arFile.path;
+    }
+
+    final currentPath = env['PATH'] ?? '';
+    env['PATH'] =
+        '${llvmBinDir.path}${Platform.isWindows ? ';' : ':'}$currentPath';
+  }
+
+  final currentRustFlags = env['RUSTFLAGS'] ?? '';
+  const extraFlags = '-C panic=abort';
+  if (!currentRustFlags.contains('panic=abort')) {
+    env['RUSTFLAGS'] = currentRustFlags.isEmpty
+        ? extraFlags
+        : '$currentRustFlags $extraFlags';
+  }
+
+  return env;
 }

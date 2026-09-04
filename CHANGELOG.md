@@ -1,3 +1,11 @@
+## 0.0.6
+
+- Fix native library loading failure on 32-bit ARM Android devices (`armeabi-v7a` / `armv7-linux-androideabi`) caused by missing `_Unwind_Resume` symbol.
+- Configure Rust profiles with `panic = "abort"` to strip ARM EHABI unwinding tables and landing pads.
+- Add automatic Android NDK toolchain and linker resolution in `hook/build.dart` (`CARGO_TARGET_<TRIPLE>_LINKER`, `CC`, `AR`, `PATH`, and `-C panic=abort`).
+
+---
+
 ## 0.0.5
 
 - Add isolated `ffr_crypto_primitives.dart` and `ffr_crypto_flow.dart` entrypoints without changing existing imports or APIs.
