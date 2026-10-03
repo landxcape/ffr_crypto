@@ -1,3 +1,10 @@
+## 0.0.8
+
+- Update `code_assets` dependency constraint to support version 2.x and resolve pub.dev dependency analysis warnings.
+- Add `.pubignore` to exclude local build caches, Rust compilation targets, and IDE configurations.
+
+---
+
 ## 0.0.7
 
 - Upgrade `ffigen` to 21.0.0 and regenerate native FFI bindings.
