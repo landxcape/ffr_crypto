@@ -1,3 +1,10 @@
+## 0.0.9
+
+- Fix macOS native library loading failure (`mis-aligned LINKEDIT string pool`) on Apple Silicon by disabling release-profile binary stripping in `Cargo.toml`.
+- Configure `hook/build.dart` to explicitly pass `CARGO_PROFILE_RELEASE_STRIP=false` on macOS and iOS target builds to prevent upstream LLVM Mach-O symbol table misalignment.
+
+---
+
 ## 0.0.8
 
 - Update `code_assets` dependency constraint to support version 2.x and resolve pub.dev dependency analysis warnings.

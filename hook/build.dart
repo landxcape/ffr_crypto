@@ -74,6 +74,9 @@ void main(List<String> args) async {
         targetArch: targetArch,
         cargoTarget: cargoTarget,
       );
+    } else if (targetOS == OS.macOS || targetOS == OS.iOS) {
+      environment = Map<String, String>.from(Platform.environment);
+      environment['CARGO_PROFILE_RELEASE_STRIP'] = 'false';
     }
 
     final result = await Process.run(
