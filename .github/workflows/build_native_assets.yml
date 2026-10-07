@@ -95,8 +95,9 @@ jobs:
         run: |
           cargo install cargo-ndk
       - name: Build Android target
+        working-directory: rust
         run: |
-          cargo ndk -t ${{ matrix.abi }} build --release --manifest-path rust/Cargo.toml
+          cargo ndk -t ${{ matrix.abi }} build --release
       - name: Stage artifact
         run: |
           mkdir -p dist
