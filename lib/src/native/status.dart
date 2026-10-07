@@ -1,6 +1,7 @@
 import '../core/exceptions.dart';
 
 const int statusSuccess = 0;
+const int statusVerificationFailed = 6;
 const int statusRsaRecoveryFailed = 8;
 
 void checkStatus(int code, String action) {

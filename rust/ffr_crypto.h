@@ -5,6 +5,8 @@
 
 void ffr_crypto_free_string(char* ptr);
 void ffr_crypto_free_bytes(unsigned char* ptr, size_t len);
+unsigned char* ffr_crypto_alloc(size_t size);
+void ffr_crypto_dealloc(unsigned char* ptr, size_t size);
 
 int ffr_crypto_rsa_pkcs1v15_public_recover(
     const char* public_key_pem,

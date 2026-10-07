@@ -27,6 +27,23 @@ pub unsafe extern "C" fn ffr_crypto_free_bytes(ptr: *mut u8, len: usize) {
     }
 }
 
+/// Allocates an uninitialized byte buffer of `size` bytes in Rust memory.
+#[no_mangle]
+pub unsafe extern "C" fn ffr_crypto_alloc(size: usize) -> *mut u8 {
+    let mut vec = Vec::with_capacity(size);
+    let ptr = vec.as_mut_ptr();
+    std::mem::forget(vec);
+    ptr
+}
+
+/// Releases a byte buffer previously created by `ffr_crypto_alloc`.
+#[no_mangle]
+pub unsafe extern "C" fn ffr_crypto_dealloc(ptr: *mut u8, size: usize) {
+    if !ptr.is_null() {
+        let _ = Vec::from_raw_parts(ptr, 0, size);
+    }
+}
+
 pub(crate) unsafe fn write_output(bytes: Vec<u8>, out: *mut *mut u8, out_len: *mut usize) -> i32 {
     if out.is_null() || out_len.is_null() {
         return ERROR_INVALID_INPUT;

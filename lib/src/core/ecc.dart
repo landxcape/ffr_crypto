@@ -1,11 +1,6 @@
-import 'dart:ffi' as ffi;
-import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:ffi/ffi.dart';
-
-import '../ffr_crypto_bindings_generated.dart' as bindings;
-import '../native/status.dart';
+import '../bridge/crypto_bridge.dart';
 import 'exceptions.dart';
 
 // --- Elliptic Curve Cryptography (Ed25519 & X25519) ---
@@ -18,28 +13,8 @@ class Ed25519KeyPair {
 
 class Ed25519 {
   static Future<Ed25519KeyPair> generateKeyPair() async {
-    return await Isolate.run(() async {
-      final pubPtr = calloc<ffi.UnsignedChar>(32);
-      final privPtr = calloc<ffi.UnsignedChar>(32);
-      try {
-        final status = bindings.ffr_crypto_ed25519_generate_keypair(
-          pubPtr,
-          privPtr,
-        );
-        checkStatus(status, 'Ed25519 key generation');
-
-        final pubBytes = Uint8List.fromList(
-          pubPtr.cast<ffi.Uint8>().asTypedList(32),
-        );
-        final privBytes = Uint8List.fromList(
-          privPtr.cast<ffi.Uint8>().asTypedList(32),
-        );
-        return Ed25519KeyPair(pubBytes, privBytes);
-      } finally {
-        calloc.free(pubPtr);
-        calloc.free(privPtr);
-      }
-    });
+    final res = await CryptoBridge.instance.ed25519GenerateKeypair();
+    return Ed25519KeyPair(res.publicKey, res.privateKey);
   }
 
   static Future<Uint8List> sign({
@@ -50,30 +25,10 @@ class Ed25519 {
       throw InvalidKeyException('Ed25519 private key must be 32 bytes');
     }
 
-    return await Isolate.run(() async {
-      final privPtr = calloc<ffi.UnsignedChar>(32);
-      privPtr.cast<ffi.Uint8>().asTypedList(32).setAll(0, privateKey);
-
-      final msgPtr = calloc<ffi.UnsignedChar>(message.length);
-      msgPtr.cast<ffi.Uint8>().asTypedList(message.length).setAll(0, message);
-
-      final sigPtr = calloc<ffi.UnsignedChar>(64);
-
-      try {
-        final status = bindings.ffr_crypto_ed25519_sign(
-          privPtr,
-          msgPtr,
-          message.length,
-          sigPtr,
-        );
-        checkStatus(status, 'Ed25519 signing');
-        return Uint8List.fromList(sigPtr.cast<ffi.Uint8>().asTypedList(64));
-      } finally {
-        calloc.free(privPtr);
-        calloc.free(msgPtr);
-        calloc.free(sigPtr);
-      }
-    });
+    return await CryptoBridge.instance.ed25519Sign(
+      privateKey: privateKey,
+      message: message,
+    );
   }
 
   static Future<bool> verify({
@@ -88,33 +43,11 @@ class Ed25519 {
       throw InvalidInputException('Ed25519 signature must be 64 bytes');
     }
 
-    return await Isolate.run(() async {
-      final pubPtr = calloc<ffi.UnsignedChar>(32);
-      pubPtr.cast<ffi.Uint8>().asTypedList(32).setAll(0, publicKey);
-
-      final msgPtr = calloc<ffi.UnsignedChar>(message.length);
-      msgPtr.cast<ffi.Uint8>().asTypedList(message.length).setAll(0, message);
-
-      final sigPtr = calloc<ffi.UnsignedChar>(64);
-      sigPtr.cast<ffi.Uint8>().asTypedList(64).setAll(0, signature);
-
-      try {
-        final status = bindings.ffr_crypto_ed25519_verify(
-          pubPtr,
-          msgPtr,
-          message.length,
-          sigPtr,
-        );
-        if (status == 0) return true;
-        if (status == 6) return false;
-        checkStatus(status, 'Ed25519 verification');
-        return false;
-      } finally {
-        calloc.free(pubPtr);
-        calloc.free(msgPtr);
-        calloc.free(sigPtr);
-      }
-    });
+    return await CryptoBridge.instance.ed25519Verify(
+      publicKey: publicKey,
+      message: message,
+      signature: signature,
+    );
   }
 }
 
@@ -126,28 +59,8 @@ class X25519KeyPair {
 
 class X25519 {
   static Future<X25519KeyPair> generateKeyPair() async {
-    return await Isolate.run(() async {
-      final pubPtr = calloc<ffi.UnsignedChar>(32);
-      final privPtr = calloc<ffi.UnsignedChar>(32);
-      try {
-        final status = bindings.ffr_crypto_x25519_generate_keypair(
-          pubPtr,
-          privPtr,
-        );
-        checkStatus(status, 'X25519 key generation');
-
-        final pubBytes = Uint8List.fromList(
-          pubPtr.cast<ffi.Uint8>().asTypedList(32),
-        );
-        final privBytes = Uint8List.fromList(
-          privPtr.cast<ffi.Uint8>().asTypedList(32),
-        );
-        return X25519KeyPair(pubBytes, privBytes);
-      } finally {
-        calloc.free(pubPtr);
-        calloc.free(privPtr);
-      }
-    });
+    final res = await CryptoBridge.instance.x25519GenerateKeypair();
+    return X25519KeyPair(res.publicKey, res.privateKey);
   }
 
   static Future<Uint8List> computeSharedSecret({
@@ -161,28 +74,9 @@ class X25519 {
       throw InvalidKeyException('X25519 peer public key must be 32 bytes');
     }
 
-    return await Isolate.run(() async {
-      final privPtr = calloc<ffi.UnsignedChar>(32);
-      privPtr.cast<ffi.Uint8>().asTypedList(32).setAll(0, privateKey);
-
-      final pubPtr = calloc<ffi.UnsignedChar>(32);
-      pubPtr.cast<ffi.Uint8>().asTypedList(32).setAll(0, peerPublicKey);
-
-      final secretPtr = calloc<ffi.UnsignedChar>(32);
-
-      try {
-        final status = bindings.ffr_crypto_x25519_compute_shared_secret(
-          privPtr,
-          pubPtr,
-          secretPtr,
-        );
-        checkStatus(status, 'X25519 secret agreement');
-        return Uint8List.fromList(secretPtr.cast<ffi.Uint8>().asTypedList(32));
-      } finally {
-        calloc.free(privPtr);
-        calloc.free(pubPtr);
-        calloc.free(secretPtr);
-      }
-    });
+    return await CryptoBridge.instance.x25519ComputeSharedSecret(
+      privateKey: privateKey,
+      peerPublicKey: peerPublicKey,
+    );
   }
 }

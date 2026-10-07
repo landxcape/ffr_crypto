@@ -1,13 +1,8 @@
 import 'dart:convert';
-import 'dart:ffi' as ffi;
-import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:ffi/ffi.dart';
-
+import '../bridge/crypto_bridge.dart';
 import '../core/exceptions.dart';
-import '../ffr_crypto_bindings_generated.dart' as bindings;
-import '../native/status.dart';
 
 /// Strict byte encoding and comparison utilities.
 abstract final class CryptoBytes {
@@ -67,29 +62,9 @@ abstract final class CryptoBytes {
   ) async {
     if (left.length != right.length) return false;
 
-    return Isolate.run(() {
-      final allocationLength = left.isEmpty ? 1 : left.length;
-      final leftPointer = calloc<ffi.UnsignedChar>(allocationLength);
-      final rightPointer = calloc<ffi.UnsignedChar>(allocationLength);
-      final outputPointer = calloc<ffi.UnsignedChar>();
-      leftPointer.cast<ffi.Uint8>().asTypedList(left.length).setAll(0, left);
-      rightPointer.cast<ffi.Uint8>().asTypedList(right.length).setAll(0, right);
-
-      try {
-        final status = bindings.ffr_crypto_constant_time_equals(
-          leftPointer,
-          left.length,
-          rightPointer,
-          right.length,
-          outputPointer,
-        );
-        checkStatus(status, 'Constant-time byte comparison');
-        return outputPointer.value == 1;
-      } finally {
-        calloc.free(leftPointer);
-        calloc.free(rightPointer);
-        calloc.free(outputPointer);
-      }
-    });
+    return await CryptoBridge.instance.constantTimeEquals(
+      left: left,
+      right: right,
+    );
   }
 }

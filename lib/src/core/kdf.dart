@@ -1,11 +1,6 @@
-import 'dart:ffi' as ffi;
-import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:ffi/ffi.dart';
-
-import '../ffr_crypto_bindings_generated.dart' as bindings;
-import '../native/status.dart';
+import '../bridge/crypto_bridge.dart';
 import 'exceptions.dart';
 
 // --- Key Derivation Functions (KDFs) ---
@@ -26,38 +21,12 @@ class Pbkdf2 {
       throw InvalidInputException('Iterations must be greater than zero');
     }
 
-    return await Isolate.run(() async {
-      final passwordPtr = calloc<ffi.UnsignedChar>(password.length);
-      passwordPtr
-          .cast<ffi.Uint8>()
-          .asTypedList(password.length)
-          .setAll(0, password);
-
-      final saltPtr = calloc<ffi.UnsignedChar>(salt.length);
-      saltPtr.cast<ffi.Uint8>().asTypedList(salt.length).setAll(0, salt);
-
-      final outKeyPtr = calloc<ffi.UnsignedChar>(keyLength);
-
-      try {
-        final status = bindings.ffr_crypto_pbkdf2(
-          passwordPtr,
-          password.length,
-          saltPtr,
-          salt.length,
-          iterations,
-          outKeyPtr,
-          keyLength,
-        );
-        checkStatus(status, 'PBKDF2 key derivation');
-        return Uint8List.fromList(
-          outKeyPtr.cast<ffi.Uint8>().asTypedList(keyLength),
-        );
-      } finally {
-        calloc.free(passwordPtr);
-        calloc.free(saltPtr);
-        calloc.free(outKeyPtr);
-      }
-    });
+    return await CryptoBridge.instance.pbkdf2(
+      password: password,
+      salt: salt,
+      iterations: iterations,
+      outputLength: keyLength,
+    );
   }
 }
 
@@ -74,50 +43,12 @@ class Hkdf {
       throw InvalidInputException('Key length must be greater than zero');
     }
 
-    return await Isolate.run(() async {
-      final ikmPtr = calloc<ffi.UnsignedChar>(ikm.length);
-      ikmPtr.cast<ffi.Uint8>().asTypedList(ikm.length).setAll(0, ikm);
-
-      final saltLength = salt.length;
-      final saltPtr = saltLength > 0
-          ? calloc<ffi.UnsignedChar>(saltLength)
-          : ffi.Pointer<ffi.UnsignedChar>.fromAddress(0);
-      if (saltLength > 0) {
-        saltPtr.cast<ffi.Uint8>().asTypedList(saltLength).setAll(0, salt);
-      }
-
-      final infoLength = info.length;
-      final infoPtr = infoLength > 0
-          ? calloc<ffi.UnsignedChar>(infoLength)
-          : ffi.Pointer<ffi.UnsignedChar>.fromAddress(0);
-      if (infoLength > 0) {
-        infoPtr.cast<ffi.Uint8>().asTypedList(infoLength).setAll(0, info);
-      }
-
-      final outKeyPtr = calloc<ffi.UnsignedChar>(keyLength);
-
-      try {
-        final status = bindings.ffr_crypto_hkdf(
-          ikmPtr,
-          ikm.length,
-          saltPtr,
-          saltLength,
-          infoPtr,
-          infoLength,
-          outKeyPtr,
-          keyLength,
-        );
-        checkStatus(status, 'HKDF key derivation');
-        return Uint8List.fromList(
-          outKeyPtr.cast<ffi.Uint8>().asTypedList(keyLength),
-        );
-      } finally {
-        calloc.free(ikmPtr);
-        if (saltLength > 0) calloc.free(saltPtr);
-        if (infoLength > 0) calloc.free(infoPtr);
-        calloc.free(outKeyPtr);
-      }
-    });
+    return await CryptoBridge.instance.hkdf(
+      ikm: ikm,
+      salt: salt,
+      info: info,
+      outputLength: keyLength,
+    );
   }
 }
 
@@ -140,40 +71,14 @@ class Argon2 {
       throw InvalidInputException('Key length must be greater than zero');
     }
 
-    return await Isolate.run(() async {
-      final passwordPtr = calloc<ffi.UnsignedChar>(password.length);
-      passwordPtr
-          .cast<ffi.Uint8>()
-          .asTypedList(password.length)
-          .setAll(0, password);
-
-      final saltPtr = calloc<ffi.UnsignedChar>(salt.length);
-      saltPtr.cast<ffi.Uint8>().asTypedList(salt.length).setAll(0, salt);
-
-      final outKeyPtr = calloc<ffi.UnsignedChar>(keyLength);
-
-      try {
-        final status = bindings.ffr_crypto_argon2(
-          passwordPtr,
-          password.length,
-          saltPtr,
-          salt.length,
-          mCost,
-          tCost,
-          pCost,
-          variant.index,
-          outKeyPtr,
-          keyLength,
-        );
-        checkStatus(status, 'Argon2 key derivation');
-        return Uint8List.fromList(
-          outKeyPtr.cast<ffi.Uint8>().asTypedList(keyLength),
-        );
-      } finally {
-        calloc.free(passwordPtr);
-        calloc.free(saltPtr);
-        calloc.free(outKeyPtr);
-      }
-    });
+    return await CryptoBridge.instance.argon2(
+      password: password,
+      salt: salt,
+      mCost: mCost,
+      tCost: tCost,
+      pCost: pCost,
+      variant: variant.index,
+      outputLength: keyLength,
+    );
   }
 }
