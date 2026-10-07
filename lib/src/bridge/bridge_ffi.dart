@@ -27,12 +27,18 @@ class BridgeFfi implements CryptoBridge {
   }
 
   @override
-  Future<({String publicKeyPem, String privateKeyPem})> rsaGenerateKeypair(int keySize) async {
+  Future<({String publicKeyPem, String privateKeyPem})> rsaGenerateKeypair(
+    int keySize,
+  ) async {
     return await Isolate.run(() async {
       final pubPemPtr = calloc<ffi.Pointer<ffi.Char>>();
       final privPemPtr = calloc<ffi.Pointer<ffi.Char>>();
       try {
-        final status = bindings.ffr_crypto_rsa_generate_keypair(keySize, pubPemPtr, privPemPtr);
+        final status = bindings.ffr_crypto_rsa_generate_keypair(
+          keySize,
+          pubPemPtr,
+          privPemPtr,
+        );
         checkStatus(status, 'RSA key generation');
         final pubStr = pubPemPtr.value.cast<Utf8>().toDartString();
         final privStr = privPemPtr.value.cast<Utf8>().toDartString();
@@ -47,11 +53,17 @@ class BridgeFfi implements CryptoBridge {
   }
 
   @override
-  Future<Uint8List> rsaEncrypt({required String publicKeyPem, required Uint8List plaintext}) async {
+  Future<Uint8List> rsaEncrypt({
+    required String publicKeyPem,
+    required Uint8List plaintext,
+  }) async {
     return await Isolate.run(() async {
       final pubKeyPtr = publicKeyPem.toNativeUtf8();
       final plaintextPtr = calloc<ffi.UnsignedChar>(plaintext.length);
-      plaintextPtr.cast<ffi.Uint8>().asTypedList(plaintext.length).setAll(0, plaintext);
+      plaintextPtr
+          .cast<ffi.Uint8>()
+          .asTypedList(plaintext.length)
+          .setAll(0, plaintext);
       final outCiphertextPtr = calloc<ffi.Pointer<ffi.UnsignedChar>>();
       final outLenPtr = calloc<ffi.Size>();
       try {
@@ -64,7 +76,9 @@ class BridgeFfi implements CryptoBridge {
         );
         checkStatus(status, 'RSA encryption');
         final outLen = outLenPtr.value;
-        final result = Uint8List.fromList(outCiphertextPtr.value.cast<ffi.Uint8>().asTypedList(outLen));
+        final result = Uint8List.fromList(
+          outCiphertextPtr.value.cast<ffi.Uint8>().asTypedList(outLen),
+        );
         bindings.ffr_crypto_free_bytes(outCiphertextPtr.value, outLen);
         return result;
       } finally {
@@ -77,11 +91,17 @@ class BridgeFfi implements CryptoBridge {
   }
 
   @override
-  Future<Uint8List> rsaDecrypt({required String privateKeyPem, required Uint8List ciphertext}) async {
+  Future<Uint8List> rsaDecrypt({
+    required String privateKeyPem,
+    required Uint8List ciphertext,
+  }) async {
     return await Isolate.run(() async {
       final privKeyPtr = privateKeyPem.toNativeUtf8();
       final ciphertextPtr = calloc<ffi.UnsignedChar>(ciphertext.length);
-      ciphertextPtr.cast<ffi.Uint8>().asTypedList(ciphertext.length).setAll(0, ciphertext);
+      ciphertextPtr
+          .cast<ffi.Uint8>()
+          .asTypedList(ciphertext.length)
+          .setAll(0, ciphertext);
       final outPlaintextPtr = calloc<ffi.Pointer<ffi.UnsignedChar>>();
       final outLenPtr = calloc<ffi.Size>();
       try {
@@ -94,7 +114,9 @@ class BridgeFfi implements CryptoBridge {
         );
         checkStatus(status, 'RSA decryption');
         final outLen = outLenPtr.value;
-        final result = Uint8List.fromList(outPlaintextPtr.value.cast<ffi.Uint8>().asTypedList(outLen));
+        final result = Uint8List.fromList(
+          outPlaintextPtr.value.cast<ffi.Uint8>().asTypedList(outLen),
+        );
         bindings.ffr_crypto_free_bytes(outPlaintextPtr.value, outLen);
         return result;
       } finally {
@@ -107,7 +129,10 @@ class BridgeFfi implements CryptoBridge {
   }
 
   @override
-  Future<Uint8List> rsaSign({required String privateKeyPem, required Uint8List digest}) async {
+  Future<Uint8List> rsaSign({
+    required String privateKeyPem,
+    required Uint8List digest,
+  }) async {
     return await Isolate.run(() async {
       final privKeyPtr = privateKeyPem.toNativeUtf8();
       final digestPtr = calloc<ffi.UnsignedChar>(digest.length);
@@ -124,7 +149,9 @@ class BridgeFfi implements CryptoBridge {
         );
         checkStatus(status, 'RSA signing');
         final outLen = outSigLenPtr.value;
-        final result = Uint8List.fromList(outSigPtr.value.cast<ffi.Uint8>().asTypedList(outLen));
+        final result = Uint8List.fromList(
+          outSigPtr.value.cast<ffi.Uint8>().asTypedList(outLen),
+        );
         bindings.ffr_crypto_free_bytes(outSigPtr.value, outLen);
         return result;
       } finally {
@@ -147,7 +174,10 @@ class BridgeFfi implements CryptoBridge {
       final digestPtr = calloc<ffi.UnsignedChar>(digest.length);
       digestPtr.cast<ffi.Uint8>().asTypedList(digest.length).setAll(0, digest);
       final sigPtr = calloc<ffi.UnsignedChar>(signature.length);
-      sigPtr.cast<ffi.Uint8>().asTypedList(signature.length).setAll(0, signature);
+      sigPtr
+          .cast<ffi.Uint8>()
+          .asTypedList(signature.length)
+          .setAll(0, signature);
       try {
         final status = bindings.ffr_crypto_rsa_verify(
           pubKeyPtr.cast<ffi.Char>(),
@@ -213,7 +243,9 @@ class BridgeFfi implements CryptoBridge {
         );
         checkStatus(status, 'Hasher finalize');
         final outLen = outLenPtr.value;
-        final result = Uint8List.fromList(outDigestPtr.value.cast<ffi.Uint8>().asTypedList(outLen));
+        final result = Uint8List.fromList(
+          outDigestPtr.value.cast<ffi.Uint8>().asTypedList(outLen),
+        );
         bindings.ffr_crypto_free_bytes(outDigestPtr.value, outLen);
         return result;
       } finally {
@@ -239,11 +271,16 @@ class BridgeFfi implements CryptoBridge {
       final keyPtr = calloc<ffi.UnsignedChar>(key.length);
       keyPtr.cast<ffi.Uint8>().asTypedList(key.length).setAll(0, key);
       final plaintextPtr = calloc<ffi.UnsignedChar>(plaintext.length);
-      plaintextPtr.cast<ffi.Uint8>().asTypedList(plaintext.length).setAll(0, plaintext);
+      plaintextPtr
+          .cast<ffi.Uint8>()
+          .asTypedList(plaintext.length)
+          .setAll(0, plaintext);
       final noncePtr = calloc<ffi.UnsignedChar>(nonce.length);
       noncePtr.cast<ffi.Uint8>().asTypedList(nonce.length).setAll(0, nonce);
       final aadLength = aad?.length ?? 0;
-      final aadPtr = aadLength > 0 ? calloc<ffi.UnsignedChar>(aadLength) : ffi.Pointer<ffi.UnsignedChar>.fromAddress(0);
+      final aadPtr = aadLength > 0
+          ? calloc<ffi.UnsignedChar>(aadLength)
+          : ffi.Pointer<ffi.UnsignedChar>.fromAddress(0);
       if (aadLength > 0) {
         aadPtr.cast<ffi.Uint8>().asTypedList(aadLength).setAll(0, aad!);
       }
@@ -264,7 +301,9 @@ class BridgeFfi implements CryptoBridge {
         );
         checkStatus(status, 'AES-GCM encryption');
         final outLen = outLenPtr.value;
-        final result = Uint8List.fromList(outCiphertextPtr.value.cast<ffi.Uint8>().asTypedList(outLen));
+        final result = Uint8List.fromList(
+          outCiphertextPtr.value.cast<ffi.Uint8>().asTypedList(outLen),
+        );
         bindings.ffr_crypto_free_bytes(outCiphertextPtr.value, outLen);
         return result;
       } finally {
@@ -289,11 +328,16 @@ class BridgeFfi implements CryptoBridge {
       final keyPtr = calloc<ffi.UnsignedChar>(key.length);
       keyPtr.cast<ffi.Uint8>().asTypedList(key.length).setAll(0, key);
       final ciphertextPtr = calloc<ffi.UnsignedChar>(ciphertext.length);
-      ciphertextPtr.cast<ffi.Uint8>().asTypedList(ciphertext.length).setAll(0, ciphertext);
+      ciphertextPtr
+          .cast<ffi.Uint8>()
+          .asTypedList(ciphertext.length)
+          .setAll(0, ciphertext);
       final noncePtr = calloc<ffi.UnsignedChar>(nonce.length);
       noncePtr.cast<ffi.Uint8>().asTypedList(nonce.length).setAll(0, nonce);
       final aadLength = aad?.length ?? 0;
-      final aadPtr = aadLength > 0 ? calloc<ffi.UnsignedChar>(aadLength) : ffi.Pointer<ffi.UnsignedChar>.fromAddress(0);
+      final aadPtr = aadLength > 0
+          ? calloc<ffi.UnsignedChar>(aadLength)
+          : ffi.Pointer<ffi.UnsignedChar>.fromAddress(0);
       if (aadLength > 0) {
         aadPtr.cast<ffi.Uint8>().asTypedList(aadLength).setAll(0, aad!);
       }
@@ -314,7 +358,9 @@ class BridgeFfi implements CryptoBridge {
         );
         checkStatus(status, 'AES-GCM decryption');
         final outLen = outLenPtr.value;
-        final result = Uint8List.fromList(outPlaintextPtr.value.cast<ffi.Uint8>().asTypedList(outLen));
+        final result = Uint8List.fromList(
+          outPlaintextPtr.value.cast<ffi.Uint8>().asTypedList(outLen),
+        );
         bindings.ffr_crypto_free_bytes(outPlaintextPtr.value, outLen);
         return result;
       } finally {
@@ -339,11 +385,16 @@ class BridgeFfi implements CryptoBridge {
       final keyPtr = calloc<ffi.UnsignedChar>(key.length);
       keyPtr.cast<ffi.Uint8>().asTypedList(key.length).setAll(0, key);
       final plaintextPtr = calloc<ffi.UnsignedChar>(plaintext.length);
-      plaintextPtr.cast<ffi.Uint8>().asTypedList(plaintext.length).setAll(0, plaintext);
+      plaintextPtr
+          .cast<ffi.Uint8>()
+          .asTypedList(plaintext.length)
+          .setAll(0, plaintext);
       final noncePtr = calloc<ffi.UnsignedChar>(nonce.length);
       noncePtr.cast<ffi.Uint8>().asTypedList(nonce.length).setAll(0, nonce);
       final aadLength = aad?.length ?? 0;
-      final aadPtr = aadLength > 0 ? calloc<ffi.UnsignedChar>(aadLength) : ffi.Pointer<ffi.UnsignedChar>.fromAddress(0);
+      final aadPtr = aadLength > 0
+          ? calloc<ffi.UnsignedChar>(aadLength)
+          : ffi.Pointer<ffi.UnsignedChar>.fromAddress(0);
       if (aadLength > 0) {
         aadPtr.cast<ffi.Uint8>().asTypedList(aadLength).setAll(0, aad!);
       }
@@ -364,7 +415,9 @@ class BridgeFfi implements CryptoBridge {
         );
         checkStatus(status, 'ChaCha20-Poly1305 encryption');
         final outLen = outLenPtr.value;
-        final result = Uint8List.fromList(outCiphertextPtr.value.cast<ffi.Uint8>().asTypedList(outLen));
+        final result = Uint8List.fromList(
+          outCiphertextPtr.value.cast<ffi.Uint8>().asTypedList(outLen),
+        );
         bindings.ffr_crypto_free_bytes(outCiphertextPtr.value, outLen);
         return result;
       } finally {
@@ -389,11 +442,16 @@ class BridgeFfi implements CryptoBridge {
       final keyPtr = calloc<ffi.UnsignedChar>(key.length);
       keyPtr.cast<ffi.Uint8>().asTypedList(key.length).setAll(0, key);
       final ciphertextPtr = calloc<ffi.UnsignedChar>(ciphertext.length);
-      ciphertextPtr.cast<ffi.Uint8>().asTypedList(ciphertext.length).setAll(0, ciphertext);
+      ciphertextPtr
+          .cast<ffi.Uint8>()
+          .asTypedList(ciphertext.length)
+          .setAll(0, ciphertext);
       final noncePtr = calloc<ffi.UnsignedChar>(nonce.length);
       noncePtr.cast<ffi.Uint8>().asTypedList(nonce.length).setAll(0, nonce);
       final aadLength = aad?.length ?? 0;
-      final aadPtr = aadLength > 0 ? calloc<ffi.UnsignedChar>(aadLength) : ffi.Pointer<ffi.UnsignedChar>.fromAddress(0);
+      final aadPtr = aadLength > 0
+          ? calloc<ffi.UnsignedChar>(aadLength)
+          : ffi.Pointer<ffi.UnsignedChar>.fromAddress(0);
       if (aadLength > 0) {
         aadPtr.cast<ffi.Uint8>().asTypedList(aadLength).setAll(0, aad!);
       }
@@ -414,7 +472,9 @@ class BridgeFfi implements CryptoBridge {
         );
         checkStatus(status, 'ChaCha20-Poly1305 decryption');
         final outLen = outLenPtr.value;
-        final result = Uint8List.fromList(outPlaintextPtr.value.cast<ffi.Uint8>().asTypedList(outLen));
+        final result = Uint8List.fromList(
+          outPlaintextPtr.value.cast<ffi.Uint8>().asTypedList(outLen),
+        );
         bindings.ffr_crypto_free_bytes(outPlaintextPtr.value, outLen);
         return result;
       } finally {
@@ -437,7 +497,10 @@ class BridgeFfi implements CryptoBridge {
   }) async {
     return await Isolate.run(() async {
       final passwordPtr = calloc<ffi.UnsignedChar>(password.length);
-      passwordPtr.cast<ffi.Uint8>().asTypedList(password.length).setAll(0, password);
+      passwordPtr
+          .cast<ffi.Uint8>()
+          .asTypedList(password.length)
+          .setAll(0, password);
       final saltPtr = calloc<ffi.UnsignedChar>(salt.length);
       saltPtr.cast<ffi.Uint8>().asTypedList(salt.length).setAll(0, salt);
       final outKeyPtr = calloc<ffi.UnsignedChar>(outputLength);
@@ -452,7 +515,9 @@ class BridgeFfi implements CryptoBridge {
           outputLength,
         );
         checkStatus(status, 'PBKDF2 key derivation');
-        return Uint8List.fromList(outKeyPtr.cast<ffi.Uint8>().asTypedList(outputLength));
+        return Uint8List.fromList(
+          outKeyPtr.cast<ffi.Uint8>().asTypedList(outputLength),
+        );
       } finally {
         calloc.free(passwordPtr);
         calloc.free(saltPtr);
@@ -488,7 +553,9 @@ class BridgeFfi implements CryptoBridge {
           outputLength,
         );
         checkStatus(status, 'HKDF key derivation');
-        return Uint8List.fromList(outKeyPtr.cast<ffi.Uint8>().asTypedList(outputLength));
+        return Uint8List.fromList(
+          outKeyPtr.cast<ffi.Uint8>().asTypedList(outputLength),
+        );
       } finally {
         calloc.free(ikmPtr);
         calloc.free(saltPtr);
@@ -510,7 +577,10 @@ class BridgeFfi implements CryptoBridge {
   }) async {
     return await Isolate.run(() async {
       final passwordPtr = calloc<ffi.UnsignedChar>(password.length);
-      passwordPtr.cast<ffi.Uint8>().asTypedList(password.length).setAll(0, password);
+      passwordPtr
+          .cast<ffi.Uint8>()
+          .asTypedList(password.length)
+          .setAll(0, password);
       final saltPtr = calloc<ffi.UnsignedChar>(salt.length);
       saltPtr.cast<ffi.Uint8>().asTypedList(salt.length).setAll(0, salt);
       final outKeyPtr = calloc<ffi.UnsignedChar>(outputLength);
@@ -528,7 +598,9 @@ class BridgeFfi implements CryptoBridge {
           outputLength,
         );
         checkStatus(status, 'Argon2 key derivation');
-        return Uint8List.fromList(outKeyPtr.cast<ffi.Uint8>().asTypedList(outputLength));
+        return Uint8List.fromList(
+          outKeyPtr.cast<ffi.Uint8>().asTypedList(outputLength),
+        );
       } finally {
         calloc.free(passwordPtr);
         calloc.free(saltPtr);
@@ -538,15 +610,23 @@ class BridgeFfi implements CryptoBridge {
   }
 
   @override
-  Future<({Uint8List publicKey, Uint8List privateKey})> ed25519GenerateKeypair() async {
+  Future<({Uint8List publicKey, Uint8List privateKey})>
+  ed25519GenerateKeypair() async {
     return await Isolate.run(() async {
       final pubPtr = calloc<ffi.UnsignedChar>(32);
       final privPtr = calloc<ffi.UnsignedChar>(32);
       try {
-        final status = bindings.ffr_crypto_ed25519_generate_keypair(pubPtr, privPtr);
+        final status = bindings.ffr_crypto_ed25519_generate_keypair(
+          pubPtr,
+          privPtr,
+        );
         checkStatus(status, 'Ed25519 key generation');
-        final pubBytes = Uint8List.fromList(pubPtr.cast<ffi.Uint8>().asTypedList(32));
-        final privBytes = Uint8List.fromList(privPtr.cast<ffi.Uint8>().asTypedList(32));
+        final pubBytes = Uint8List.fromList(
+          pubPtr.cast<ffi.Uint8>().asTypedList(32),
+        );
+        final privBytes = Uint8List.fromList(
+          privPtr.cast<ffi.Uint8>().asTypedList(32),
+        );
         return (publicKey: pubBytes, privateKey: privBytes);
       } finally {
         calloc.free(pubPtr);
@@ -556,7 +636,10 @@ class BridgeFfi implements CryptoBridge {
   }
 
   @override
-  Future<Uint8List> ed25519Sign({required Uint8List privateKey, required Uint8List message}) async {
+  Future<Uint8List> ed25519Sign({
+    required Uint8List privateKey,
+    required Uint8List message,
+  }) async {
     return await Isolate.run(() async {
       final privPtr = calloc<ffi.UnsignedChar>(32);
       privPtr.cast<ffi.Uint8>().asTypedList(32).setAll(0, privateKey);
@@ -564,7 +647,12 @@ class BridgeFfi implements CryptoBridge {
       msgPtr.cast<ffi.Uint8>().asTypedList(message.length).setAll(0, message);
       final sigPtr = calloc<ffi.UnsignedChar>(64);
       try {
-        final status = bindings.ffr_crypto_ed25519_sign(privPtr, msgPtr, message.length, sigPtr);
+        final status = bindings.ffr_crypto_ed25519_sign(
+          privPtr,
+          msgPtr,
+          message.length,
+          sigPtr,
+        );
         checkStatus(status, 'Ed25519 signing');
         return Uint8List.fromList(sigPtr.cast<ffi.Uint8>().asTypedList(64));
       } finally {
@@ -589,7 +677,12 @@ class BridgeFfi implements CryptoBridge {
       final sigPtr = calloc<ffi.UnsignedChar>(64);
       sigPtr.cast<ffi.Uint8>().asTypedList(64).setAll(0, signature);
       try {
-        final status = bindings.ffr_crypto_ed25519_verify(pubPtr, msgPtr, message.length, sigPtr);
+        final status = bindings.ffr_crypto_ed25519_verify(
+          pubPtr,
+          msgPtr,
+          message.length,
+          sigPtr,
+        );
         if (status == statusSuccess) return true;
         if (status == statusVerificationFailed) return false;
         checkStatus(status, 'Ed25519 verification');
@@ -603,15 +696,23 @@ class BridgeFfi implements CryptoBridge {
   }
 
   @override
-  Future<({Uint8List publicKey, Uint8List privateKey})> x25519GenerateKeypair() async {
+  Future<({Uint8List publicKey, Uint8List privateKey})>
+  x25519GenerateKeypair() async {
     return await Isolate.run(() async {
       final pubPtr = calloc<ffi.UnsignedChar>(32);
       final privPtr = calloc<ffi.UnsignedChar>(32);
       try {
-        final status = bindings.ffr_crypto_x25519_generate_keypair(pubPtr, privPtr);
+        final status = bindings.ffr_crypto_x25519_generate_keypair(
+          pubPtr,
+          privPtr,
+        );
         checkStatus(status, 'X25519 key generation');
-        final pubBytes = Uint8List.fromList(pubPtr.cast<ffi.Uint8>().asTypedList(32));
-        final privBytes = Uint8List.fromList(privPtr.cast<ffi.Uint8>().asTypedList(32));
+        final pubBytes = Uint8List.fromList(
+          pubPtr.cast<ffi.Uint8>().asTypedList(32),
+        );
+        final privBytes = Uint8List.fromList(
+          privPtr.cast<ffi.Uint8>().asTypedList(32),
+        );
         return (publicKey: pubBytes, privateKey: privBytes);
       } finally {
         calloc.free(pubPtr);
@@ -632,7 +733,11 @@ class BridgeFfi implements CryptoBridge {
       peerPtr.cast<ffi.Uint8>().asTypedList(32).setAll(0, peerPublicKey);
       final outPtr = calloc<ffi.UnsignedChar>(32);
       try {
-        final status = bindings.ffr_crypto_x25519_compute_shared_secret(privPtr, peerPtr, outPtr);
+        final status = bindings.ffr_crypto_x25519_compute_shared_secret(
+          privPtr,
+          peerPtr,
+          outPtr,
+        );
         checkStatus(status, 'X25519 shared secret');
         return Uint8List.fromList(outPtr.cast<ffi.Uint8>().asTypedList(32));
       } finally {
@@ -644,7 +749,10 @@ class BridgeFfi implements CryptoBridge {
   }
 
   @override
-  Future<bool> constantTimeEquals({required Uint8List left, required Uint8List right}) async {
+  Future<bool> constantTimeEquals({
+    required Uint8List left,
+    required Uint8List right,
+  }) async {
     return await Isolate.run(() {
       final leftPtr = calloc<ffi.UnsignedChar>(left.length);
       leftPtr.cast<ffi.Uint8>().asTypedList(left.length).setAll(0, left);
@@ -692,12 +800,16 @@ class BridgeFfi implements CryptoBridge {
           case statusSuccess:
             break;
           case statusRsaRecoveryFailed:
-            throw RsaRecoveryException('RSA PKCS#1 v1.5 public recovery failed');
+            throw RsaRecoveryException(
+              'RSA PKCS#1 v1.5 public recovery failed',
+            );
           default:
             checkStatus(status, 'RSA PKCS#1 v1.5 public recovery');
         }
         final length = outputLength.value;
-        final result = Uint8List.fromList(outputPointer.value.cast<ffi.Uint8>().asTypedList(length));
+        final result = Uint8List.fromList(
+          outputPointer.value.cast<ffi.Uint8>().asTypedList(length),
+        );
         bindings.ffr_crypto_free_bytes(outputPointer.value, length);
         return result;
       } finally {

@@ -183,15 +183,20 @@ Future<File?> _resolvePrebuiltBinary({
   required String libName,
 }) async {
   // 1. Check bundled binary in package
-  final bundled = File.fromUri(packageRoot.resolve('blobs/$cargoTarget/$libName'));
+  final bundled = File.fromUri(
+    packageRoot.resolve('blobs/$cargoTarget/$libName'),
+  );
   if (bundled.existsSync()) {
     return bundled;
   }
 
   // 2. Check cached binary in user home cache
-  final homeDir = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '';
+  final homeDir =
+      Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '';
   if (homeDir.isNotEmpty) {
-    final cacheDir = Directory('$homeDir/.cache/ffr_crypto/binaries/$version/$cargoTarget');
+    final cacheDir = Directory(
+      '$homeDir/.cache/ffr_crypto/binaries/$version/$cargoTarget',
+    );
     final cachedFile = File('${cacheDir.path}/$libName');
     if (cachedFile.existsSync()) {
       return cachedFile;
@@ -199,14 +204,19 @@ Future<File?> _resolvePrebuiltBinary({
   }
 
   // 3. Attempt download from GitHub Releases
-  final url = 'https://github.com/landxcape/ffr_crypto/releases/download/v$version/$cargoTarget-$libName';
+  final url =
+      'https://github.com/landxcape/ffr_crypto/releases/download/v$version/$cargoTarget-$libName';
   HttpClient? client;
   try {
     client = HttpClient()..connectionTimeout = const Duration(seconds: 2);
-    final request = await client.getUrl(Uri.parse(url)).timeout(const Duration(seconds: 2));
+    final request = await client
+        .getUrl(Uri.parse(url))
+        .timeout(const Duration(seconds: 2));
     final response = await request.close().timeout(const Duration(seconds: 3));
     if (response.statusCode == 200 && homeDir.isNotEmpty) {
-      final cacheDir = Directory('$homeDir/.cache/ffr_crypto/binaries/$version/$cargoTarget');
+      final cacheDir = Directory(
+        '$homeDir/.cache/ffr_crypto/binaries/$version/$cargoTarget',
+      );
       await cacheDir.create(recursive: true);
       final cachedFile = File('${cacheDir.path}/$libName');
       final sink = cachedFile.openWrite();
@@ -280,7 +290,9 @@ Map<String, String> _resolveAndroidEnvironment({
       }
 
       for (final ndkDir in ndkDirs) {
-        final prebuiltDir = Directory('${ndkDir.path}/toolchains/llvm/prebuilt');
+        final prebuiltDir = Directory(
+          '${ndkDir.path}/toolchains/llvm/prebuilt',
+        );
         if (prebuiltDir.existsSync()) {
           for (final hostDir in prebuiltDir.listSync().whereType<Directory>()) {
             final binDir = Directory('${hostDir.path}/bin');

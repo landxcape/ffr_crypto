@@ -25,7 +25,8 @@ class BridgeWasm implements CryptoBridge {
     try {
       final global = globalContext;
       if (global.hasProperty('__FFR_CRYPTO_WASM_BYTES__'.toJS).toDart) {
-        final jsBytes = global.getProperty('__FFR_CRYPTO_WASM_BYTES__'.toJS) as JSAny;
+        final jsBytes =
+            global.getProperty('__FFR_CRYPTO_WASM_BYTES__'.toJS) as JSAny;
         final res = await _instantiateWasm(jsBytes).toDart;
         final instance = res.getProperty('instance'.toJS) as JSObject;
         _wasmExports = instance.getProperty('exports'.toJS) as JSObject;
@@ -101,7 +102,10 @@ class BridgeWasm implements CryptoBridge {
   Future<Uint8List> randomBytes(int length) async {
     final ptr = await _alloc(length);
     try {
-      final status = await _call('ffr_crypto_random_bytes', [ptr.toJS, length.toJS]);
+      final status = await _call('ffr_crypto_random_bytes', [
+        ptr.toJS,
+        length.toJS,
+      ]);
       checkStatus(status, 'Random generation');
       return await _readMemory(ptr, length);
     } finally {
@@ -110,17 +114,29 @@ class BridgeWasm implements CryptoBridge {
   }
 
   @override
-  Future<({String publicKeyPem, String privateKeyPem})> rsaGenerateKeypair(int keySize) async {
+  Future<({String publicKeyPem, String privateKeyPem})> rsaGenerateKeypair(
+    int keySize,
+  ) async {
     final pubPtrPtr = await _alloc(4);
     final privPtrPtr = await _alloc(4);
     try {
-      final status = await _call('ffr_crypto_rsa_generate_keypair', [keySize.toJS, pubPtrPtr.toJS, privPtrPtr.toJS]);
+      final status = await _call('ffr_crypto_rsa_generate_keypair', [
+        keySize.toJS,
+        pubPtrPtr.toJS,
+        privPtrPtr.toJS,
+      ]);
       checkStatus(status, 'RSA key generation');
 
       final pubPtrBytes = await _readMemory(pubPtrPtr, 4);
       final privPtrBytes = await _readMemory(privPtrPtr, 4);
-      final pubPtr = pubPtrBytes.buffer.asByteData().getUint32(0, Endian.little);
-      final privPtr = privPtrBytes.buffer.asByteData().getUint32(0, Endian.little);
+      final pubPtr = pubPtrBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
+      final privPtr = privPtrBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
 
       final pubStr = await _readNullTerminatedString(pubPtr);
       final privStr = await _readNullTerminatedString(privPtr);
@@ -148,7 +164,10 @@ class BridgeWasm implements CryptoBridge {
   }
 
   @override
-  Future<Uint8List> rsaEncrypt({required String publicKeyPem, required Uint8List plaintext}) async {
+  Future<Uint8List> rsaEncrypt({
+    required String publicKeyPem,
+    required Uint8List plaintext,
+  }) async {
     final pemBytes = utf8.encode('$publicKeyPem\x00');
     final pubPtr = await _alloc(pemBytes.length);
     await _writeMemory(pubPtr, Uint8List.fromList(pemBytes));
@@ -171,8 +190,14 @@ class BridgeWasm implements CryptoBridge {
 
       final outPtrBytes = await _readMemory(outPtrPtr, 4);
       final outLenBytes = await _readMemory(outLenPtr, 4);
-      final outPtr = outPtrBytes.buffer.asByteData().getUint32(0, Endian.little);
-      final outLen = outLenBytes.buffer.asByteData().getUint32(0, Endian.little);
+      final outPtr = outPtrBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
+      final outLen = outLenBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
 
       final result = await _readMemory(outPtr, outLen);
       await _call('ffr_crypto_free_bytes', [outPtr.toJS, outLen.toJS]);
@@ -186,7 +211,10 @@ class BridgeWasm implements CryptoBridge {
   }
 
   @override
-  Future<Uint8List> rsaDecrypt({required String privateKeyPem, required Uint8List ciphertext}) async {
+  Future<Uint8List> rsaDecrypt({
+    required String privateKeyPem,
+    required Uint8List ciphertext,
+  }) async {
     final pemBytes = utf8.encode('$privateKeyPem\x00');
     final privPtr = await _alloc(pemBytes.length);
     await _writeMemory(privPtr, Uint8List.fromList(pemBytes));
@@ -209,8 +237,14 @@ class BridgeWasm implements CryptoBridge {
 
       final outPtrBytes = await _readMemory(outPtrPtr, 4);
       final outLenBytes = await _readMemory(outLenPtr, 4);
-      final outPtr = outPtrBytes.buffer.asByteData().getUint32(0, Endian.little);
-      final outLen = outLenBytes.buffer.asByteData().getUint32(0, Endian.little);
+      final outPtr = outPtrBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
+      final outLen = outLenBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
 
       final result = await _readMemory(outPtr, outLen);
       await _call('ffr_crypto_free_bytes', [outPtr.toJS, outLen.toJS]);
@@ -224,7 +258,10 @@ class BridgeWasm implements CryptoBridge {
   }
 
   @override
-  Future<Uint8List> rsaSign({required String privateKeyPem, required Uint8List digest}) async {
+  Future<Uint8List> rsaSign({
+    required String privateKeyPem,
+    required Uint8List digest,
+  }) async {
     final pemBytes = utf8.encode('$privateKeyPem\x00');
     final privPtr = await _alloc(pemBytes.length);
     await _writeMemory(privPtr, Uint8List.fromList(pemBytes));
@@ -247,8 +284,14 @@ class BridgeWasm implements CryptoBridge {
 
       final outPtrBytes = await _readMemory(outPtrPtr, 4);
       final outLenBytes = await _readMemory(outLenPtr, 4);
-      final outPtr = outPtrBytes.buffer.asByteData().getUint32(0, Endian.little);
-      final outLen = outLenBytes.buffer.asByteData().getUint32(0, Endian.little);
+      final outPtr = outPtrBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
+      final outLen = outLenBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
 
       final result = await _readMemory(outPtr, outLen);
       await _call('ffr_crypto_free_bytes', [outPtr.toJS, outLen.toJS]);
@@ -300,7 +343,10 @@ class BridgeWasm implements CryptoBridge {
   Future<int> hasherNew(int algorithmId) async {
     final outPtrPtr = await _alloc(4);
     try {
-      final status = await _call('ffr_crypto_hasher_new', [algorithmId.toJS, outPtrPtr.toJS]);
+      final status = await _call('ffr_crypto_hasher_new', [
+        algorithmId.toJS,
+        outPtrPtr.toJS,
+      ]);
       checkStatus(status, 'Hasher initialization');
       final outPtrBytes = await _readMemory(outPtrPtr, 4);
       return outPtrBytes.buffer.asByteData().getUint32(0, Endian.little);
@@ -314,7 +360,11 @@ class BridgeWasm implements CryptoBridge {
     final dataPtr = await _alloc(data.length);
     await _writeMemory(dataPtr, data);
     try {
-      final status = await _call('ffr_crypto_hasher_update', [hasherHandle.toJS, dataPtr.toJS, data.length.toJS]);
+      final status = await _call('ffr_crypto_hasher_update', [
+        hasherHandle.toJS,
+        dataPtr.toJS,
+        data.length.toJS,
+      ]);
       checkStatus(status, 'Hasher update');
     } finally {
       await _dealloc(dataPtr, data.length);
@@ -326,13 +376,23 @@ class BridgeWasm implements CryptoBridge {
     final outPtrPtr = await _alloc(4);
     final outLenPtr = await _alloc(4);
     try {
-      final status = await _call('ffr_crypto_hasher_finalize', [hasherHandle.toJS, outPtrPtr.toJS, outLenPtr.toJS]);
+      final status = await _call('ffr_crypto_hasher_finalize', [
+        hasherHandle.toJS,
+        outPtrPtr.toJS,
+        outLenPtr.toJS,
+      ]);
       checkStatus(status, 'Hasher finalize');
 
       final outPtrBytes = await _readMemory(outPtrPtr, 4);
       final outLenBytes = await _readMemory(outLenPtr, 4);
-      final outPtr = outPtrBytes.buffer.asByteData().getUint32(0, Endian.little);
-      final outLen = outLenBytes.buffer.asByteData().getUint32(0, Endian.little);
+      final outPtr = outPtrBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
+      final outLen = outLenBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
 
       final result = await _readMemory(outPtr, outLen);
       await _call('ffr_crypto_free_bytes', [outPtr.toJS, outLen.toJS]);
@@ -355,7 +415,14 @@ class BridgeWasm implements CryptoBridge {
     required Uint8List nonce,
     Uint8List? aad,
   }) async {
-    return await _symmetricCipher('ffr_crypto_aes_gcm_encrypt', 'AES-GCM encryption', key, plaintext, nonce, aad);
+    return await _symmetricCipher(
+      'ffr_crypto_aes_gcm_encrypt',
+      'AES-GCM encryption',
+      key,
+      plaintext,
+      nonce,
+      aad,
+    );
   }
 
   @override
@@ -365,7 +432,14 @@ class BridgeWasm implements CryptoBridge {
     required Uint8List nonce,
     Uint8List? aad,
   }) async {
-    return await _symmetricCipher('ffr_crypto_aes_gcm_decrypt', 'AES-GCM decryption', key, ciphertext, nonce, aad);
+    return await _symmetricCipher(
+      'ffr_crypto_aes_gcm_decrypt',
+      'AES-GCM decryption',
+      key,
+      ciphertext,
+      nonce,
+      aad,
+    );
   }
 
   @override
@@ -375,7 +449,14 @@ class BridgeWasm implements CryptoBridge {
     required Uint8List nonce,
     Uint8List? aad,
   }) async {
-    return await _symmetricCipher('ffr_crypto_chacha20_poly1305_encrypt', 'ChaCha20-Poly1305 encryption', key, plaintext, nonce, aad);
+    return await _symmetricCipher(
+      'ffr_crypto_chacha20_poly1305_encrypt',
+      'ChaCha20-Poly1305 encryption',
+      key,
+      plaintext,
+      nonce,
+      aad,
+    );
   }
 
   @override
@@ -385,7 +466,14 @@ class BridgeWasm implements CryptoBridge {
     required Uint8List nonce,
     Uint8List? aad,
   }) async {
-    return await _symmetricCipher('ffr_crypto_chacha20_poly1305_decrypt', 'ChaCha20-Poly1305 decryption', key, ciphertext, nonce, aad);
+    return await _symmetricCipher(
+      'ffr_crypto_chacha20_poly1305_decrypt',
+      'ChaCha20-Poly1305 decryption',
+      key,
+      ciphertext,
+      nonce,
+      aad,
+    );
   }
 
   Future<Uint8List> _symmetricCipher(
@@ -431,8 +519,14 @@ class BridgeWasm implements CryptoBridge {
 
       final outPtrBytes = await _readMemory(outPtrPtr, 4);
       final outLenBytes = await _readMemory(outLenPtr, 4);
-      final outPtr = outPtrBytes.buffer.asByteData().getUint32(0, Endian.little);
-      final outLen = outLenBytes.buffer.asByteData().getUint32(0, Endian.little);
+      final outPtr = outPtrBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
+      final outLen = outLenBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
 
       final result = await _readMemory(outPtr, outLen);
       await _call('ffr_crypto_free_bytes', [outPtr.toJS, outLen.toJS]);
@@ -561,11 +655,15 @@ class BridgeWasm implements CryptoBridge {
   }
 
   @override
-  Future<({Uint8List publicKey, Uint8List privateKey})> ed25519GenerateKeypair() async {
+  Future<({Uint8List publicKey, Uint8List privateKey})>
+  ed25519GenerateKeypair() async {
     final pubPtr = await _alloc(32);
     final privPtr = await _alloc(32);
     try {
-      final status = await _call('ffr_crypto_ed25519_generate_keypair', [pubPtr.toJS, privPtr.toJS]);
+      final status = await _call('ffr_crypto_ed25519_generate_keypair', [
+        pubPtr.toJS,
+        privPtr.toJS,
+      ]);
       checkStatus(status, 'Ed25519 key generation');
       final pub = await _readMemory(pubPtr, 32);
       final priv = await _readMemory(privPtr, 32);
@@ -577,7 +675,10 @@ class BridgeWasm implements CryptoBridge {
   }
 
   @override
-  Future<Uint8List> ed25519Sign({required Uint8List privateKey, required Uint8List message}) async {
+  Future<Uint8List> ed25519Sign({
+    required Uint8List privateKey,
+    required Uint8List message,
+  }) async {
     final privPtr = await _alloc(32);
     await _writeMemory(privPtr, privateKey);
 
@@ -587,7 +688,12 @@ class BridgeWasm implements CryptoBridge {
     final sigPtr = await _alloc(64);
 
     try {
-      final status = await _call('ffr_crypto_ed25519_sign', [privPtr.toJS, msgPtr.toJS, message.length.toJS, sigPtr.toJS]);
+      final status = await _call('ffr_crypto_ed25519_sign', [
+        privPtr.toJS,
+        msgPtr.toJS,
+        message.length.toJS,
+        sigPtr.toJS,
+      ]);
       checkStatus(status, 'Ed25519 signing');
       return await _readMemory(sigPtr, 64);
     } finally {
@@ -613,7 +719,12 @@ class BridgeWasm implements CryptoBridge {
     await _writeMemory(sigPtr, signature);
 
     try {
-      final status = await _call('ffr_crypto_ed25519_verify', [pubPtr.toJS, msgPtr.toJS, message.length.toJS, sigPtr.toJS]);
+      final status = await _call('ffr_crypto_ed25519_verify', [
+        pubPtr.toJS,
+        msgPtr.toJS,
+        message.length.toJS,
+        sigPtr.toJS,
+      ]);
       if (status == statusSuccess) return true;
       if (status == statusVerificationFailed) return false;
       checkStatus(status, 'Ed25519 verification');
@@ -626,11 +737,15 @@ class BridgeWasm implements CryptoBridge {
   }
 
   @override
-  Future<({Uint8List publicKey, Uint8List privateKey})> x25519GenerateKeypair() async {
+  Future<({Uint8List publicKey, Uint8List privateKey})>
+  x25519GenerateKeypair() async {
     final pubPtr = await _alloc(32);
     final privPtr = await _alloc(32);
     try {
-      final status = await _call('ffr_crypto_x25519_generate_keypair', [pubPtr.toJS, privPtr.toJS]);
+      final status = await _call('ffr_crypto_x25519_generate_keypair', [
+        pubPtr.toJS,
+        privPtr.toJS,
+      ]);
       checkStatus(status, 'X25519 key generation');
       final pub = await _readMemory(pubPtr, 32);
       final priv = await _readMemory(privPtr, 32);
@@ -655,7 +770,11 @@ class BridgeWasm implements CryptoBridge {
     final outPtr = await _alloc(32);
 
     try {
-      final status = await _call('ffr_crypto_x25519_compute_shared_secret', [privPtr.toJS, peerPtr.toJS, outPtr.toJS]);
+      final status = await _call('ffr_crypto_x25519_compute_shared_secret', [
+        privPtr.toJS,
+        peerPtr.toJS,
+        outPtr.toJS,
+      ]);
       checkStatus(status, 'X25519 shared secret');
       return await _readMemory(outPtr, 32);
     } finally {
@@ -666,7 +785,10 @@ class BridgeWasm implements CryptoBridge {
   }
 
   @override
-  Future<bool> constantTimeEquals({required Uint8List left, required Uint8List right}) async {
+  Future<bool> constantTimeEquals({
+    required Uint8List left,
+    required Uint8List right,
+  }) async {
     final leftPtr = await _alloc(left.length);
     await _writeMemory(leftPtr, left);
 
@@ -727,8 +849,14 @@ class BridgeWasm implements CryptoBridge {
 
       final outPtrBytes = await _readMemory(outPtrPtr, 4);
       final outLenBytes = await _readMemory(outLenPtr, 4);
-      final outPtr = outPtrBytes.buffer.asByteData().getUint32(0, Endian.little);
-      final outLen = outLenBytes.buffer.asByteData().getUint32(0, Endian.little);
+      final outPtr = outPtrBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
+      final outLen = outLenBytes.buffer.asByteData().getUint32(
+        0,
+        Endian.little,
+      );
 
       final result = await _readMemory(outPtr, outLen);
       await _call('ffr_crypto_free_bytes', [outPtr.toJS, outLen.toJS]);

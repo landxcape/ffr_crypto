@@ -8,7 +8,9 @@ abstract class CryptoBridge {
 
   Future<Uint8List> randomBytes(int length);
 
-  Future<({String publicKeyPem, String privateKeyPem})> rsaGenerateKeypair(int keySize);
+  Future<({String publicKeyPem, String privateKeyPem})> rsaGenerateKeypair(
+    int keySize,
+  );
 
   Future<Uint8List> rsaEncrypt({
     required String publicKeyPem,
@@ -91,7 +93,8 @@ abstract class CryptoBridge {
     required int outputLength,
   });
 
-  Future<({Uint8List publicKey, Uint8List privateKey})> ed25519GenerateKeypair();
+  Future<({Uint8List publicKey, Uint8List privateKey})>
+  ed25519GenerateKeypair();
 
   Future<Uint8List> ed25519Sign({
     required Uint8List privateKey,

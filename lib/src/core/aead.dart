@@ -68,10 +68,14 @@ class ChaCha20Poly1305 {
     Uint8List? aad,
   }) async {
     if (key.length != 32) {
-      throw InvalidKeyException('ChaCha20-Poly1305 key length must be 32 bytes');
+      throw InvalidKeyException(
+        'ChaCha20-Poly1305 key length must be 32 bytes',
+      );
     }
     if (nonce.length != 12) {
-      throw InvalidInputException('ChaCha20-Poly1305 nonce length must be 12 bytes');
+      throw InvalidInputException(
+        'ChaCha20-Poly1305 nonce length must be 12 bytes',
+      );
     }
 
     return await CryptoBridge.instance.chacha20Poly1305Encrypt(
@@ -89,10 +93,14 @@ class ChaCha20Poly1305 {
     Uint8List? aad,
   }) async {
     if (key.length != 32) {
-      throw InvalidKeyException('ChaCha20-Poly1305 key length must be 32 bytes');
+      throw InvalidKeyException(
+        'ChaCha20-Poly1305 key length must be 32 bytes',
+      );
     }
     if (nonce.length != 12) {
-      throw InvalidInputException('ChaCha20-Poly1305 nonce length must be 12 bytes');
+      throw InvalidInputException(
+        'ChaCha20-Poly1305 nonce length must be 12 bytes',
+      );
     }
 
     return await CryptoBridge.instance.chacha20Poly1305Decrypt(
