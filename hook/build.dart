@@ -62,60 +62,79 @@ void main(List<String> args) async {
       libName = 'libffr_crypto.so';
     }
 
-    final List<String> cargoArgs = ['build', '--release'];
-    if (cargoTarget != null) {
-      cargoArgs.addAll(['--target', cargoTarget]);
-    }
-
-    Map<String, String>? environment;
-    if (targetOS == OS.android && cargoTarget != null) {
-      environment = _resolveAndroidEnvironment(
-        input: input,
-        targetArch: targetArch,
-        cargoTarget: cargoTarget,
-      );
-    } else if (targetOS == OS.macOS || targetOS == OS.iOS) {
-      environment = Map<String, String>.from(Platform.environment);
-      environment['CARGO_PROFILE_RELEASE_STRIP'] = 'false';
-    }
-
-    final result = await Process.run(
-      'cargo',
-      cargoArgs,
-      workingDirectory: rustDir.path,
-      environment: environment,
-    );
-
-    if (result.exitCode != 0) {
-      throw Exception(
-        'Cargo build failed:\n${result.stderr}\n${result.stdout}',
-      );
-    }
-
-    // Find the built library
-    final String targetSubdir = cargoTarget != null
-        ? 'target/$cargoTarget/release'
-        : 'target/release';
-    var libUri = rustDir.uri.resolve('$targetSubdir/$libName');
-
-    // Copy the library to the outputDirectory to bundle it
     final outDir = input.outputDirectory;
     await Directory.fromUri(outDir).create(recursive: true);
-    final File srcFile = File.fromUri(libUri);
-    if (!await srcFile.exists()) {
-      // Try default release if cargo target fallback was used
-      final File fallbackFile = File.fromUri(
-        rustDir.uri.resolve('target/release/$libName'),
+    final File destFile = File.fromUri(outDir.resolve(libName));
+
+    final bool buildFromSource =
+        Platform.environment['FFR_CRYPTO_BUILD_FROM_SOURCE'] == 'true';
+
+    final version = _resolvePackageVersion(input.packageRoot);
+    File? prebuiltFile;
+    if (!buildFromSource && cargoTarget != null) {
+      prebuiltFile = await _resolvePrebuiltBinary(
+        packageRoot: input.packageRoot,
+        version: version,
+        cargoTarget: cargoTarget,
+        libName: libName,
       );
-      if (await fallbackFile.exists()) {
-        libUri = fallbackFile.uri;
-      } else {
-        throw Exception('Built library not found at: ${srcFile.path}');
-      }
     }
 
-    final File destFile = File.fromUri(outDir.resolve(libName));
-    await File.fromUri(libUri).copy(destFile.path);
+    if (prebuiltFile != null && prebuiltFile.existsSync()) {
+      await prebuiltFile.copy(destFile.path);
+    } else {
+      // Compile from source via cargo
+      final List<String> cargoArgs = ['build', '--release'];
+      if (cargoTarget != null) {
+        cargoArgs.addAll(['--target', cargoTarget]);
+      }
+
+      Map<String, String>? environment;
+      if (targetOS == OS.android && cargoTarget != null) {
+        environment = _resolveAndroidEnvironment(
+          input: input,
+          targetArch: targetArch,
+          cargoTarget: cargoTarget,
+        );
+      } else if (targetOS == OS.macOS || targetOS == OS.iOS) {
+        environment = Map<String, String>.from(Platform.environment);
+        environment['CARGO_PROFILE_RELEASE_STRIP'] = 'false';
+      }
+
+      final result = await Process.run(
+        'cargo',
+        cargoArgs,
+        workingDirectory: rustDir.path,
+        environment: environment,
+      );
+
+      if (result.exitCode != 0) {
+        throw Exception(
+          'Cargo build failed:\n${result.stderr}\n${result.stdout}',
+        );
+      }
+
+      // Find the built library
+      final String targetSubdir = cargoTarget != null
+          ? 'target/$cargoTarget/release'
+          : 'target/release';
+      var libUri = rustDir.uri.resolve('$targetSubdir/$libName');
+
+      final File srcFile = File.fromUri(libUri);
+      if (!await srcFile.exists()) {
+        // Try default release if cargo target fallback was used
+        final File fallbackFile = File.fromUri(
+          rustDir.uri.resolve('target/release/$libName'),
+        );
+        if (await fallbackFile.exists()) {
+          libUri = fallbackFile.uri;
+        } else {
+          throw Exception('Built library not found at: ${srcFile.path}');
+        }
+      }
+
+      await File.fromUri(libUri).copy(destFile.path);
+    }
 
     output.assets.code.add(
       CodeAsset(
@@ -140,6 +159,67 @@ void main(List<String> args) async {
     rustDependencies.add(rustDir.uri.resolve('Cargo.toml'));
     output.dependencies.addAll(rustDependencies);
   });
+}
+
+String _resolvePackageVersion(Uri packageRoot) {
+  try {
+    final pubspecFile = File.fromUri(packageRoot.resolve('pubspec.yaml'));
+    if (pubspecFile.existsSync()) {
+      for (final line in pubspecFile.readAsLinesSync()) {
+        final trimmed = line.trim();
+        if (trimmed.startsWith('version:')) {
+          return trimmed.substring('version:'.length).trim();
+        }
+      }
+    }
+  } catch (_) {}
+  return '0.0.9';
+}
+
+Future<File?> _resolvePrebuiltBinary({
+  required Uri packageRoot,
+  required String version,
+  required String cargoTarget,
+  required String libName,
+}) async {
+  // 1. Check bundled binary in package
+  final bundled = File.fromUri(packageRoot.resolve('blobs/$cargoTarget/$libName'));
+  if (bundled.existsSync()) {
+    return bundled;
+  }
+
+  // 2. Check cached binary in user home cache
+  final homeDir = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '';
+  if (homeDir.isNotEmpty) {
+    final cacheDir = Directory('$homeDir/.cache/ffr_crypto/binaries/$version/$cargoTarget');
+    final cachedFile = File('${cacheDir.path}/$libName');
+    if (cachedFile.existsSync()) {
+      return cachedFile;
+    }
+  }
+
+  // 3. Attempt download from GitHub Releases
+  final url = 'https://github.com/landxcape/ffr_crypto/releases/download/v$version/$cargoTarget-$libName';
+  HttpClient? client;
+  try {
+    client = HttpClient()..connectionTimeout = const Duration(seconds: 2);
+    final request = await client.getUrl(Uri.parse(url)).timeout(const Duration(seconds: 2));
+    final response = await request.close().timeout(const Duration(seconds: 3));
+    if (response.statusCode == 200 && homeDir.isNotEmpty) {
+      final cacheDir = Directory('$homeDir/.cache/ffr_crypto/binaries/$version/$cargoTarget');
+      await cacheDir.create(recursive: true);
+      final cachedFile = File('${cacheDir.path}/$libName');
+      final sink = cachedFile.openWrite();
+      await response.pipe(sink);
+      return cachedFile;
+    }
+  } catch (_) {
+    // Network unavailable or release asset not found -> fallback to local cargo build
+  } finally {
+    client?.close(force: true);
+  }
+
+  return null;
 }
 
 Map<String, String> _resolveAndroidEnvironment({
