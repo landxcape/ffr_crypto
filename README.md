@@ -28,16 +28,16 @@ A Flutter-first, Rust-powered native cryptography package using Dart FFI and Flu
 
 ## Platform Support
 
-`ffr_crypto` compiles a native Rust library at build time via Flutter Native Assets. The supported targets are listed below; each requires a compatible Rust toolchain.
+`ffr_crypto` supports all 6 Flutter platforms out of the box.
 
-| Platform | Architectures | Supported |
-|----------|---------------|-----------|
-| 🍎 macOS | arm64, x64 | ✅ |
-| 📱 iOS | arm64, x64 (simulator) | ✅ |
-| 🤖 Android | arm64-v8a, armeabi-v7a, x86, x86_64 | ✅ |
-| 🐧 Linux | arm64, x64 | ✅ |
-| 🪟 Windows | x64 | ✅ |
-| 🌐 Web | — | ❌ (dart:ffi is unsupported on Web) |
+| Platform | Engine & Architecture | Pre-Compiled Available | Supported |
+|----------|------------------------|:----------------------:|:---------:|
+| 🍎 macOS | Native (`arm64`, `x64`) | ✅ | ✅ |
+| 📱 iOS | Native (`arm64`, `simulator`) | ✅ | ✅ |
+| 🤖 Android | Native (`arm64-v8a`, `armeabi-v7a`, `x86_64`) | ✅ | ✅ |
+| 🐧 Linux | Native (`arm64`, `x64`) | ✅ | ✅ |
+| 🪟 Windows | Native (`x64`) | ✅ | ✅ |
+| 🌐 Web | WebAssembly (`wasm32-unknown-unknown`) | ✅ | ✅ |
 
 ---
 
@@ -47,48 +47,16 @@ Add the package dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ffr_crypto: <latest>
+  ffr_crypto: ^0.1.0
 ```
 
-### Choose explicit package layers
+### Zero Toolchain Prerequisites for Consumers
 
-`ffr_crypto` has three isolated entrypoints. Import every layer your code uses:
+**Flutter developers do not need Rust, Cargo, or the Android NDK installed.**
+- On **Mobile & Desktop**, `ffr_crypto` uses Dart Native Assets to automatically provision and cache pre-compiled release binaries matching your target platform and architecture.
+- On **Web**, `ffr_crypto` runs directly via its bundled WebAssembly module using `dart:js_interop`.
 
-```dart
-import 'package:ffr_crypto/ffr_crypto.dart';
-import 'package:ffr_crypto/ffr_crypto_primitives.dart';
-import 'package:ffr_crypto/ffr_crypto_flow.dart';
-```
-
-- `ffr_crypto.dart` contains the existing safe, high-level API. Existing users do not need to change imports or call sites.
-- `ffr_crypto_primitives.dart` contains advanced direct primitives and strict byte utilities. It does not re-export the core library.
-- `ffr_crypto_flow.dart` contains flow lifecycle, sources, steps, cancellation, and flow errors. It does not re-export either other layer.
-
-Importing multiple entrypoints does not duplicate native assets, types, or runtime work.
-
-### Prerequisites — Rust Toolchain
-
-Install the [Rust toolchain](https://rustup.rs) first, then add the targets for each platform you intend to build:
-
-```bash
-# macOS (Apple Silicon + Intel)
-rustup target add aarch64-apple-darwin x86_64-apple-darwin
-
-# iOS (Device + Simulator)
-rustup target add aarch64-apple-ios x86_64-apple-ios
-
-# Android (requires NDK via Android Studio or sdkmanager)
-rustup target add aarch64-linux-android armv7-linux-androideabi \
-                   i686-linux-android x86_64-linux-android
-
-# Linux
-rustup target add aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu
-
-# Windows (run on a Windows host)
-rustup target add x86_64-pc-windows-msvc
-```
-
-> **Note:** Android builds additionally require the [Android NDK](https://developer.android.com/ndk). Install it via Android Studio → SDK Manager → SDK Tools → NDK.
+> **Note for Contributors / Source Compilation:** If you wish to build the Rust engine locally from source, set the environment variable `FFR_CRYPTO_BUILD_FROM_SOURCE=true` and ensure the [Rust toolchain](https://rustup.rs) is installed.
 
 ---
 

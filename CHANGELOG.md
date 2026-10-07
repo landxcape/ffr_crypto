@@ -1,3 +1,14 @@
+## 0.1.0
+
+- **Web Platform Support:** Full Flutter Web support powered by WebAssembly (`wasm32-unknown-unknown`) and modern `dart:js_interop`. All cryptographic algorithms (AES-GCM, ChaCha20-Poly1305, RSA, SHA-2, SHA-3, BLAKE3, Argon2id, HKDF, PBKDF2, Ed25519, X25519) work identically on Web with zero parity loss.
+- **Pre-Compiled Native Binaries:** Updated `hook/build.dart` to automatically resolve pre-compiled release binaries from local cache and GitHub Releases, eliminating the requirement for Flutter developers to install Rust, Cargo, or the Android NDK for standard app development.
+- **Source Build Opt-In:** Retained `FFR_CRYPTO_BUILD_FROM_SOURCE=true` environment flag for package maintainers and developers compiling the native crate from source.
+- **Decoupled Architecture:** Introduced `CryptoBridge` abstraction layer isolating native `dart:ffi` calls behind conditional imports (`bridge_ffi.dart` vs `bridge_wasm.dart`), enabling full pub.dev Web badge eligibility.
+- **Automated CI/CD:** Added multi-platform GitHub Actions build workflow (`build_native_assets.yml`) to compile and attach release binaries across Android, iOS, macOS, Windows, Linux, and Web on release tags.
+- **Platform Declarations:** Formally declared full 6-platform support (`android`, `ios`, `macos`, `linux`, `windows`, `web`) in `pubspec.yaml`.
+
+---
+
 ## 0.0.9
 
 - Fix macOS native library loading failure (`mis-aligned LINKEDIT string pool`) on Apple Silicon by disabling release-profile binary stripping in `Cargo.toml`.
