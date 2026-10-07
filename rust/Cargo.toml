@@ -22,6 +22,9 @@ x25519-dalek = { version = "2.0", features = ["static_secrets"] }
 subtle = "2.6"
 zeroize = "1.8"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
 [profile.release]
 panic = "abort"
 opt-level = 3
