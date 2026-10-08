@@ -35,19 +35,19 @@ const Map<String, Map<String, String>> prebuiltChecksums = {
     'aarch64-apple-ios-libffr_crypto.dylib':
         '203e0b1522d91d52613c7fdb49e0519d43ba9ce714c20ae7049877766e3f20d6',
     'aarch64-linux-android-libffr_crypto.so':
-        'ec46d949e4eac78d1e53bdf772372fd8eef2200426564a092354de5023b9ab5a',
+        'e207a92d651bf987a5d2fb663c890316fc348b174151e1e92b4c9c93286b12ca',
     'aarch64-unknown-linux-gnu-libffr_crypto.so':
         '75bc79ffb5fd8af695ae03bae7d1f44243433c6d0689e75e40a17019d5f01b0b',
     'armv7-linux-androideabi-libffr_crypto.so':
-        'b8c29335adbc1fd29abc8e769e218fcbba4956ef937abd050c9cd1691b9be1cb',
+        '588aadb8ce7a91c7753f3f66ec6a28dffbced61063feb9fc0db1c93fb3a8a95f',
     'ffr_crypto.wasm':
         '8b48cec33a9d4e1fac43ccc65c01e56ae9662c1a2149274976a53a1fa3b9a26f',
     'x86_64-apple-darwin-libffr_crypto.dylib':
         '0b279239c4e74c95dbdfd39fb1a56e9f1738ddd44d5a16b1adc41a04fb93704a',
     'x86_64-linux-android-libffr_crypto.so':
-        'b8c7f6f5ff3f47d7f53d92b90a93b00d6100ec39db17d91d720a79e190b7b55e',
+        'bb31d4bb5c18a1816fa326ca757820d154dc235f76b2fd42a2c565f35c654a6e',
     'x86_64-pc-windows-msvc-ffr_crypto.dll':
-        '7a6e1bee8cf40f24873b367ac8af647ba4e4dc6a59110039f1db3d35c79daacd',
+        'e9eb1d7fcf6118cc5d11647f1738e91cd45d616c25046e18e287d7338088c2b2',
     'x86_64-unknown-linux-gnu-libffr_crypto.so':
         '46a7d10dfdf4b3db17f32e5dc0c9c4083492880e255359904aa8a20093ea6e72',
   },
