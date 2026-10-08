@@ -168,6 +168,11 @@ jobs:
           else
             echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           fi
+      - name: Generate SHA256SUMS
+        run: |
+          cd release-assets
+          sha256sum * > SHA256SUMS
+          cd ..
       - name: Publish assets to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
+import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
+
+import 'checksums.dart';
 
 void main(List<String> args) async {
   await build(args, (input, output) async {
@@ -182,12 +185,19 @@ Future<File?> _resolvePrebuiltBinary({
   required String cargoTarget,
   required String libName,
 }) async {
+  final assetKey = '$cargoTarget-$libName';
+  final expectedHash =
+      prebuiltChecksums[version]?[assetKey] ??
+      prebuiltChecksums[version]?[libName];
+
   // 1. Check bundled binary in package
   final bundled = File.fromUri(
     packageRoot.resolve('blobs/$cargoTarget/$libName'),
   );
   if (bundled.existsSync()) {
-    return bundled;
+    if (expectedHash == null || await _verifyFileHash(bundled, expectedHash)) {
+      return bundled;
+    }
   }
 
   // 2. Check cached binary in user home cache
@@ -199,7 +209,15 @@ Future<File?> _resolvePrebuiltBinary({
     );
     final cachedFile = File('${cacheDir.path}/$libName');
     if (cachedFile.existsSync()) {
-      return cachedFile;
+      if (expectedHash == null ||
+          await _verifyFileHash(cachedFile, expectedHash)) {
+        return cachedFile;
+      } else {
+        // Cached file is corrupted or hash changed; purge it
+        try {
+          await cachedFile.delete();
+        } catch (_) {}
+      }
     }
   }
 
@@ -208,19 +226,42 @@ Future<File?> _resolvePrebuiltBinary({
       'https://github.com/landxcape/ffr_crypto/releases/download/v$version/$cargoTarget-$libName';
   HttpClient? client;
   try {
-    client = HttpClient()..connectionTimeout = const Duration(seconds: 2);
+    client = HttpClient()..connectionTimeout = const Duration(seconds: 3);
     final request = await client
         .getUrl(Uri.parse(url))
-        .timeout(const Duration(seconds: 2));
-    final response = await request.close().timeout(const Duration(seconds: 3));
+        .timeout(const Duration(seconds: 3));
+    final response = await request.close().timeout(const Duration(seconds: 5));
     if (response.statusCode == 200 && homeDir.isNotEmpty) {
       final cacheDir = Directory(
         '$homeDir/.cache/ffr_crypto/binaries/$version/$cargoTarget',
       );
       await cacheDir.create(recursive: true);
-      final cachedFile = File('${cacheDir.path}/$libName');
-      final sink = cachedFile.openWrite();
+      final tempFile = File('${cacheDir.path}/$libName.download');
+      final sink = tempFile.openWrite();
       await response.pipe(sink);
+
+      // Verify SHA-256 hash before trusting and caching the binary
+      if (expectedHash != null) {
+        final isValid = await _verifyFileHash(tempFile, expectedHash);
+        if (!isValid) {
+          try {
+            await tempFile.delete();
+          } catch (_) {}
+          stderr.writeln(
+            '[ffr_crypto] Security warning: Precompiled binary checksum mismatch for $assetKey. '
+            'Downloaded binary was rejected.',
+          );
+          return null;
+        }
+      }
+
+      final cachedFile = File('${cacheDir.path}/$libName');
+      if (cachedFile.existsSync()) {
+        try {
+          await cachedFile.delete();
+        } catch (_) {}
+      }
+      await tempFile.rename(cachedFile.path);
       return cachedFile;
     }
   } catch (_) {
@@ -230,6 +271,16 @@ Future<File?> _resolvePrebuiltBinary({
   }
 
   return null;
+}
+
+Future<bool> _verifyFileHash(File file, String expectedHexHash) async {
+  try {
+    final bytes = await file.readAsBytes();
+    final digest = sha256.convert(bytes);
+    return digest.toString().toLowerCase() == expectedHexHash.toLowerCase();
+  } catch (_) {
+    return false;
+  }
 }
 
 Map<String, String> _resolveAndroidEnvironment({

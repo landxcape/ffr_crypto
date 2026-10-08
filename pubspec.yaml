@@ -1,6 +1,6 @@
 name: ffr_crypto
 description: "A Flutter-first, Rust-powered cryptography package with native RSA, AEAD, hashing, KDF, ECC, compatibility primitives, and typed workflows."
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/landxcape/ffr_crypto
 repository: https://github.com/landxcape/ffr_crypto
 issue_tracker: https://github.com/landxcape/ffr_crypto/issues
@@ -26,6 +26,7 @@ environment:
 
 dependencies:
   code_assets: '>=1.2.1 <3.0.0'
+  crypto: ^3.0.7
   ffi: ^2.1.4
   hooks: ^2.0.2
   logging: ^1.3.0
