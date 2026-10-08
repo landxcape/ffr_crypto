@@ -1,6 +1,6 @@
-## 0.1.1
+## 0.1.2
 
-- **Supply-Chain Verification:** Added cryptographic SHA-256 checksum verification in `hook/build.dart` and `hook/checksums.dart` for all pre-compiled native release binaries downloaded from GitHub Releases.
+- **Supply-Chain Verification:** Added cryptographic SHA-256 checksum verification in `hook/build.dart` for all pre-compiled native release binaries downloaded from GitHub Releases.
 - **Tamper Protection:** Downloaded binaries are verified against the immutable hash manifest embedded in the pub.dev package archive before caching or bundling; mismatched or corrupted binaries are rejected and purged.
 - **Release Integrity Manifest:** Configured CI release workflow to automatically compute and publish `SHA256SUMS` with every GitHub release for independent verification.
 
