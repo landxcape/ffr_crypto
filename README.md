@@ -1,6 +1,10 @@
 # ffr_crypto
 
-A Flutter-first, Rust-powered native cryptography package using Dart FFI and Flutter Native Assets.
+Native cryptography package for Flutter using Dart FFI and Flutter Native Assets.
+
+[![pub package](https://img.shields.io/pub/v/ffr_crypto.svg)](https://pub.dev/packages/ffr_crypto)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-flutter%20%7C%20android%20%7C%20ios%20%7C%20macos%20%7C%20windows%20%7C%20linux%20%7C%20web-blue)](https://pub.dev/packages/ffr_crypto)
 
 ## Features
 
@@ -32,22 +36,21 @@ A Flutter-first, Rust-powered native cryptography package using Dart FFI and Flu
 
 | Platform | Engine & Architecture | Pre-Compiled Available | Supported |
 |----------|------------------------|:----------------------:|:---------:|
-| 🍎 macOS | Native (`arm64`, `x64`) | ✅ | ✅ |
-| 📱 iOS | Native (`arm64`, `simulator`) | ✅ | ✅ |
-| 🤖 Android | Native (`arm64-v8a`, `armeabi-v7a`, `x86_64`) | ✅ | ✅ |
-| 🐧 Linux | Native (`arm64`, `x64`) | ✅ | ✅ |
-| 🪟 Windows | Native (`x64`) | ✅ | ✅ |
-| 🌐 Web | WebAssembly (`wasm32-unknown-unknown`) | ✅ | ✅ |
+| macOS | Native (`arm64`, `x64`) | Yes | Yes |
+| iOS | Native (`arm64`, `simulator`) | Yes | Yes |
+| Android | Native (`arm64-v8a`, `armeabi-v7a`, `x86_64`) | Yes | Yes |
+| Linux | Native (`arm64`, `x64`) | Yes | Yes |
+| Windows | Native (`x64`) | Yes | Yes |
+| Web | WebAssembly (`wasm32-unknown-unknown`) | Yes | Yes |
 
 ---
 
-## Getting Started
+## Installation
 
-Add the package dependency to your `pubspec.yaml`:
+Add the package to your project:
 
-```yaml
-dependencies:
-  ffr_crypto: ^0.1.0
+```bash
+flutter pub add ffr_crypto
 ```
 
 ### Zero Toolchain Prerequisites for Consumers
