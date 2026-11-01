@@ -1,3 +1,9 @@
+## 0.1.3
+
+- Docs: Added package badges, removed platform table emojis, and streamlined CLI installation instructions.
+
+---
+
 ## 0.1.2
 
 - **Supply-Chain Verification:** Added cryptographic SHA-256 checksum verification in `hook/build.dart` for all pre-compiled native release binaries downloaded from GitHub Releases.
