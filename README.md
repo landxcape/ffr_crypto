@@ -5,6 +5,9 @@ Native cryptography package for Flutter using Dart FFI and Flutter Native Assets
 [![pub package](https://img.shields.io/pub/v/ffr_crypto.svg)](https://pub.dev/packages/ffr_crypto)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-flutter%20%7C%20android%20%7C%20ios%20%7C%20macos%20%7C%20windows%20%7C%20linux%20%7C%20web-blue)](https://pub.dev/packages/ffr_crypto)
+[![Interactive Workbench](https://img.shields.io/badge/workbench-interactive%20lab-0284C7.svg)](https://shakyapurna.com.np/lab/ffr_crypto)
+
+An [interactive workbench](https://shakyapurna.com.np/lab/ffr_crypto) is available to explore cryptographic architecture, FFI boundaries, and API specifications.
 
 ## Features
 
